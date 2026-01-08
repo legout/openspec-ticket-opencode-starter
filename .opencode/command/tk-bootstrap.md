@@ -1,0 +1,26 @@
+---
+description: Create tk epic + 3–8 chunky task tickets for an OpenSpec change
+agent: flow
+subtask: true
+---
+
+OpenSpec change-id: $1
+Epic title: $2
+
+Show the change:
+!`openspec show $1`
+
+Create a tk epic and 3–8 task tickets under it.
+
+Requirements:
+- Epic must use: `--type epic --external-ref "openspec:$1"`
+- Each task must use: `--type task --parent <EPIC_ID>`
+- Use `--acceptance` for measurable done criteria (tests, behavior, docs).
+- Use `tk dep` only for real blockers.
+- Keep it chunky: deliverables (DB/API/UI/tests/docs), not one per checkbox.
+
+Output EXACT commands in order:
+1) `tk create ...` epic
+2) 3–8x `tk create ...` tasks
+3) `tk dep ...` lines (if needed)
+4) What should appear in `tk ready` afterward
