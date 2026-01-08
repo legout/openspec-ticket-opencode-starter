@@ -14,12 +14,14 @@ OPENCODE_FILES=(
   ".opencode/command/tk-bootstrap.md"
   ".opencode/command/tk-close-and-sync.md"
   ".opencode/command/tk-queue.md"
+  ".opencode/skill/openspec/SKILL.md"
+  ".opencode/skill/ticket/SKILL.md"
 )
 
 echo "Installing OpenSpec + Ticket + OpenCode Starter Kit..."
 
 # Create directories
-mkdir -p .opencode/agent .opencode/command
+mkdir -p .opencode/agent .opencode/command .opencode/skill/openspec .opencode/skill/ticket
 
 # Download .opencode files
 for file in "${OPENCODE_FILES[@]}"; do

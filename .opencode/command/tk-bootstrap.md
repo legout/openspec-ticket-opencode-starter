@@ -2,10 +2,14 @@
 description: Create tk epic + 3–8 chunky task tickets for an OpenSpec change
 agent: flow
 subtask: true
+permission:
+  skill: allow
 ---
 
 OpenSpec change-id: $1
 Epic title: $2
+
+Use your **openspec** skill to understand the change and your **ticket** skill to design the execution graph.
 
 Show the change:
 !`openspec show $1`

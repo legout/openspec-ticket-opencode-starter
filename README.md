@@ -12,12 +12,13 @@ This repo is meant to be copied into an existing project (or used as a template)
 
 ## What you get
 
-- `AGENTS.md` — tool-agnostic rules any agent can follow
-- `.opencode/agent/flow.md` — a “workflow orchestrator” subagent (planning + tracking only)
-- `.opencode/command/*` — slash commands to:
+- `AGENTS.md` — tool-agnostic rules any agent can follow.
+- `.opencode/agent/flow.md` — a “workflow orchestrator” subagent.
+- `.opencode/skill/` — **modular expert knowledge** (OpenSpec & ticket) for better agent performance.
+- `.opencode/command/*` — specialized slash commands to:
   - list/show OpenSpec changes
   - display `tk ready/blocked`
-  - bootstrap a **3–8 chunky ticket** execution plan for a change
+  - bootstrap a **3–8 chunky ticket** execution plan
   - close + sync progress back to OpenSpec tasks
 
 ---
