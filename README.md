@@ -22,6 +22,50 @@ This repo is meant to be copied into an existing project (or used as a template)
 
 ---
 
+## Installation
+
+### 1) Install the workflow files
+
+Run this one-liner in your project root:
+
+```bash
+curl -sSL https://raw.githubusercontent.com/legout/openspec-ticket-opencode-starter/main/install.sh | bash
+```
+
+This will:
+- Create `.opencode/agent/` and `.opencode/command/` directories with all workflow files
+- **Append** to your existing `AGENTS.md` if one exists (preserving your current content), or create a new one if not
+
+After installation, commit the files:
+
+```bash
+git add AGENTS.md .opencode
+git commit -m "Add OpenSpec + ticket + OpenCode workflow"
+```
+
+### 2) Install prerequisites (if not already installed)
+
+The workflow requires these CLI tools:
+
+**OpenSpec** (spec-driven changes):
+```bash
+npm install -g @fission-ai/openspec@latest
+openspec init  # run in your project
+```
+
+**ticket (`tk`)** (git-backed task tracking):
+```bash
+brew tap wedow/tools
+brew install ticket
+```
+
+**jq** (optional, for `tk query`):
+```bash
+brew install jq  # or: apt install jq
+```
+
+---
+
 ## Why “3–8 chunky tickets” (recommended default)
 
 Instead of creating one ticket per checkbox, this workflow uses **3–8 deliverable-sized tickets per OpenSpec change**.
@@ -67,12 +111,9 @@ Optional (for `tk query`):
 
 ## Quick start (in your project)
 
-1) Copy these files into your repo:
-- `AGENTS.md`
-- `.opencode/agent/flow.md`
-- `.opencode/command/*.md`
+1) Run the installation script (see [Installation](#installation) above)
 
-2) Commit them:
+2) Commit your changes:
 
 ```bash
 git add AGENTS.md .opencode
