@@ -1,7 +1,6 @@
 ---
 description: Show tk ready/blocked and suggest next work item(s) (does NOT start work) [ultrahardwork]
 agent: os-tk-agent
-subtask: false
 ---
 
 Ready:
