@@ -15,6 +15,7 @@ OPENCODE_FILES=(
   ".opencode/command/tk-close-and-sync.md"
   ".opencode/command/tk-queue.md"
   ".opencode/command/tk-start.md"
+  ".opencode/command/tk-start-multi.md"
   ".opencode/skill/openspec/SKILL.md"
   ".opencode/skill/ticket/SKILL.md"
 )
