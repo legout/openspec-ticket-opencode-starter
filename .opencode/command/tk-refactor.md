@@ -1,5 +1,5 @@
 ---
-description: Refactor tk backlog: merge duplicates, consolidate overlapping tasks, and clean up dependencies [ultrahardwork]
+description: "Refactor tk backlog: merge duplicates, consolidate overlapping tasks, and clean up dependencies [ultrahardwork]"
 agent: os-tk-agent
 permission:
   bash: allow
