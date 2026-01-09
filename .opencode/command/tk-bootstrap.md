@@ -1,5 +1,5 @@
 ---
-description: Create tk epic + 3–8 chunky task tickets for an OpenSpec change [ultrahardwork]
+description: Create tk epic + 3–8 chunky task tickets for an OpenSpec change
 agent: os-tk-agent
 permission:
   skill: allow
@@ -33,4 +33,4 @@ Output EXACT commands in order:
 3) `tk dep ...` lines (if needed)
 4) What should appear in `tk ready` afterward
 
-<!-- ultrahardwork -->
+**Important:** Do NOT start any ticket implementation. Users must explicitly trigger work with `/tk-start` or `/tk-start-multi`.
