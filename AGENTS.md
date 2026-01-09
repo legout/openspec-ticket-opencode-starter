@@ -34,6 +34,12 @@ This repo uses:
 - Only tickets in `tk ready` will be started; non-ready tickets are skipped.
 - Always wait for all workers to complete and summarize results.
 
+5b) Backlog hygiene (avoid duplicates)
+- Before creating new tickets with `/tk-bootstrap`, agent must check existing open tickets via `tk query`.
+- If a task required for a proposal already exists (>90% overlap), use existing ticket instead of creating a duplicate.
+- Use `/tk-refactor` to clean up backlog after bootstrapping large proposals or when duplicate work is suspected.
+- When merging duplicates: consolidate into one shared ticket, mark losers as done with notes, and reroute all dependencies.
+
 6) Keep OpenSpec tasks in sync
 - When a tk task is completed, check off the corresponding items in `openspec/changes/<change>/tasks.md`.
 - When all tickets under the epic are complete, archive the change:

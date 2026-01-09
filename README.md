@@ -264,6 +264,7 @@ This workflow favors **3–8 deliverable-sized tickets** over fine-grained check
 | `/tk-start <id>` | Start a ticket in the background (allows parallel implementation). |
 | `/tk-start-multi <id1> <id2> ...` | Start multiple tickets in parallel (wait and summarize). Optional: `--parallel N` to set concurrency (default: 3). Only starts tickets in `tk ready`. |
 | `/tk-bootstrap <id> "<title>"` | Generate `tk create` commands for an epic + tasks. |
+| `/tk-refactor` | Scan backlog, merge duplicates, consolidate overlapping tasks, and clean up dependencies. |
 | `/tk-close-and-sync <tk-id> <os-id>` | Add notes, close ticket, and sync OpenSpec progress. |
 
 ---
@@ -278,6 +279,13 @@ If you have `oh-my-opencode` installed, the **Sisyphus** orchestrator can manage
 1. Using OpenSpec for high-level requirements.
 2. Creating a `tk` epic with `--external-ref "openspec:<id>"`.
 3. Executing tasks from `tk ready`.
+
+### Backlog Hygiene
+
+Keep your backlog clean and focused:
+- **Avoid duplicates:** Use `/tk-refactor` after bootstrapping large proposals or when you suspect overlapping work.
+- **Shared tickets:** For cross-proposal dependencies (e.g., database migrations needed by both Proposal A and Proposal B), create a shared ticket rather than duplicating effort.
+- **Consolidate tiny tasks:** If you have many small tickets that could be done in one session, run `/tk-refactor` to merge them into "chunky" deliverables.
 
 ---
 

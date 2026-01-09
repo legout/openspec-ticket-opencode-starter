@@ -13,6 +13,9 @@ Use your **openspec** skill to understand the change and your **ticket** skill t
 Show the change:
 !`openspec show $1`
 
+Scan existing open tickets to avoid duplication:
+!`tk query --status open`
+
 Create a tk epic and 3–8 task tickets under it.
 
 Requirements:
@@ -21,6 +24,7 @@ Requirements:
 - Use `--acceptance` for measurable done criteria (tests, behavior, docs).
 - Use `tk dep` only for real blockers.
 - Keep it chunky: deliverables (DB/API/UI/tests/docs), not one per checkbox.
+- **Avoid duplicates:** Before proposing a task, check if an existing open ticket (from the scan above) already covers >90% of the same work. If yes, do NOT create a new task—note that existing ticket should be used instead.
 
 Output EXACT commands in order:
 1) `tk create ...` epic
