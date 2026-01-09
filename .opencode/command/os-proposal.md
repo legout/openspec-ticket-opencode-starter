@@ -1,6 +1,5 @@
 ---
 description: Create a new OpenSpec proposal for a feature or bugfix [ultrahardwork]
-sisyphus: true
 agent: os-tk-agent
 ---
 

@@ -1,6 +1,5 @@
 ---
 description: Show active OpenSpec changes and next step [ultrahardwork]
-sisyphus: true
 agent: os-tk-agent
 ---
 

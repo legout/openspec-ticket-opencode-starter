@@ -2,7 +2,6 @@
 description: Start a tk ticket and implement it (runs in background for parallel work) [ultrahardwork]
 agent: os-tk-agent
 background: true
-sisyphus: true
 ---
 
 Ticket: $ARGUMENTS
