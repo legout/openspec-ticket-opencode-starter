@@ -16,6 +16,6 @@ You are an expert in Spec-Driven Development (SDD). Your goal is to ensure that 
 
 ## Operational Logic
 
-1. **Cycle:** `/os-proposal` -> Refine -> `/openspec-apply` (deprecated in favor of ticket bootstrap).
+1. **Cycle:** `/os-proposal` -> Refine -> `/os-apply` (deprecated in favor of ticket bootstrap).
 2. **Persistence:** Always check `openspec list` and `openspec show <id>` to understand the current context.
 3. **Traceability:** Ensure every change is archived (`openspec archive`) once implemented.

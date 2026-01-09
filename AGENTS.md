@@ -14,7 +14,7 @@ This repo uses:
   - `openspec validate <change>` before coding when feasible.
 
 2) No "blind" implementation
-- Do NOT use commands like `/openspec-apply` or equivalent "auto-implement" tools.
+- Do NOT use commands like `/os-apply` or equivalent "auto-implement" tools.
 - All implementation must be driven by `tk` tickets.
 
 3) One OpenSpec change = one ticket epic
@@ -51,4 +51,4 @@ If you have `oh-my-opencode` installed, the **Sisyphus** engineering manager wil
 2. **Delegation:** It will automatically delegate chunky implementation tasks to the `os-tk-agent`.
 3. **Parallelism:** Sisyphus will attempt to run multiple ready tickets in parallel where possible.
 
-Commands in this workflow are marked with `sisyphus: true` and `[ultrahardwork]`, signaling to the orchestrator that they are part of the managed engineering flow.
+Commands in this workflow are marked with `[ultrahardwork]`, signaling to the orchestrator that they are part of the managed engineering flow.
