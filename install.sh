@@ -27,21 +27,36 @@ echo "Installing OpenSpec + Ticket + OpenCode Starter Kit..."
 # Create directories
 mkdir -p .opencode/agent .opencode/command .opencode/skill/openspec .opencode/skill/ticket
 
-# Download .opencode files
+# Download .opencode files (overwrites existing)
 for file in "${OPENCODE_FILES[@]}"; do
   echo "  → $file"
   curl -sSL "$REPO_URL/$file" -o "$file"
 done
 
-# Handle AGENTS.md (append if exists, create if not)
-AGENTS_CONTENT=$(curl -sSL "$REPO_URL/AGENTS.md")
+# Handle AGENTS.md with markers
+MARKER_START="<!-- OPENSPEC-TK-START -->"
+MARKER_END="<!-- OPENSPEC-TK-END -->"
+
+# Download new AGENTS.md content (includes markers)
+NEW_AGENTS=$(curl -sSL "$REPO_URL/AGENTS.md")
+
 if [[ -f "AGENTS.md" ]]; then
-  echo "  → AGENTS.md (appending to existing file)"
-  echo -e "\n\n---\n" >> AGENTS.md
-  echo "$AGENTS_CONTENT" >> AGENTS.md
+  echo "  → AGENTS.md (updating existing file)"
+
+  # Check if markers exist
+  if grep -q "$MARKER_START" AGENTS.md; then
+    # Remove old content between markers (inclusive) and append new content
+    # Using perl for cross-platform compatibility (GNU and BSD sed differ for multiline)
+    perl -i -0pe "s/\Q$MARKER_START\E.*?\Q$MARKER_END\E//gs" AGENTS.md || true
+    echo "$NEW_AGENTS" >> AGENTS.md
+  else
+    # No markers exist - just append
+    echo "" >> AGENTS.md
+    echo "$NEW_AGENTS" >> AGENTS.md
+  fi
 else
   echo "  → AGENTS.md (creating new file)"
-  echo "$AGENTS_CONTENT" > AGENTS.md
+  echo "$NEW_AGENTS" > AGENTS.md
 fi
 
 echo ""

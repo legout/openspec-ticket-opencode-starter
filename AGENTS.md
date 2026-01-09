@@ -1,8 +1,14 @@
+<!-- OPENSPEC-TK-START -->
 # Agent Workflow: OpenSpec + Ticket (tk)
 
 This repo uses:
 - OpenSpec for spec-driven changes (proposal → setup → archive)
 - ticket (tk) for task execution tracking (dependencies, ready/blocked)
+
+# Ticket Instructions
+
+This project uses a CLI ticket system for task management. Run `tk help` when you need to use it.
+For every OpenSpec change, create a ticket epic with --external-ref openspec:<change-id> and work from tk ready.
 
 ## Core rules (must follow)
 
@@ -64,3 +70,4 @@ If you have `oh-my-opencode` installed, the **Sisyphus** engineering manager wil
 3. **Parallelism:** Sisyphus will attempt to run multiple ready tickets in parallel where possible. Use `/tk-start-multi <ids...> [--parallel N]` to explicitly start multiple tickets in parallel with configurable concurrency.
 
 Commands in this workflow are marked with `[ultrahardwork]`, signaling to the orchestrator that they are part of the managed engineering flow.
+<!-- OPENSPEC-TK-END -->
