@@ -1,5 +1,5 @@
 ---
-description: "Merge duplicate tickets, consolidate overlapping tasks, and clean up tk dependencies"
+description: "Merge duplicate tickets, consolidate overlapping tasks, and clean up tk dependencies [ulw]"
 agent: os-tk-agent
 permission:
   bash: allow
@@ -50,3 +50,5 @@ Ask for user confirmation. Once confirmed, execute all `tk` commands in order:
 
 After execution, show the new state:
 !`tk ready`
+
+STOP here. Wait for user to proceed with next step.

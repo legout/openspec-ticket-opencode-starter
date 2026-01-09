@@ -1,5 +1,5 @@
 ---
-description: Create a new OpenSpec proposal for a feature or bugfix [ultrahardwork]
+description: Create a new OpenSpec proposal for a feature or bugfix [ulw]
 agent: os-tk-agent
 ---
 
@@ -11,4 +11,4 @@ Use your **openspec** skill to:
 3) Identify initial goals and constraints.
 4) Summarize the proposal to the user and suggest next steps (e.g., refining design or `/tk-bootstrap`).
 
-<!-- ultrahardwork -->
+STOP here. Wait for user to review and approve the proposal before proceeding.

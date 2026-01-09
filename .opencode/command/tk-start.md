@@ -1,5 +1,5 @@
 ---
-description: Start a tk ticket and implement it (runs in background for parallel work) [ultrahardwork]
+description: Start a tk ticket and implement it (runs in background for parallel work) [ulw]
 agent: os-tk-agent
 subtask: true
 background: true
@@ -19,4 +19,4 @@ Now:
 
 **Note:** This command runs in the background. You can run `/tk-queue` again to start additional tickets in parallel.
 
-<!-- ultrahardwork -->
+STOP here. Do NOT auto-close the ticket. Wait for user to run `/tk-close-and-sync`.

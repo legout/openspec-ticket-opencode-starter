@@ -1,5 +1,5 @@
 ---
-description: Show details of an OpenSpec change and suggest ticket chunks [ultrahardwork]
+description: Show details of an OpenSpec change and suggest ticket chunks [ulw]
 agent: os-tk-agent
 ---
 
@@ -12,4 +12,4 @@ Now:
 - Suggest running: `openspec validate $ARGUMENTS`
 - Identify 3–8 deliverable chunks that should become tk tasks.
 
-<!-- ultrahardwork -->
+STOP here. Wait for user to run `/tk-bootstrap` or refine the spec.

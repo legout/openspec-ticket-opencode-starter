@@ -1,5 +1,5 @@
 ---
-description: Start multiple tk tickets in parallel (wait and summarize) [ultrahardwork]
+description: Start multiple tk tickets in parallel (wait and summarize) [ulw]
 ---
 
 Ticket IDs: $ARGUMENTS
@@ -43,4 +43,4 @@ Launch tasks in batches of at most the concurrency limit (default: 3). Launch th
   - Per-ticket outcome (ID: success/failure + brief note)
 - For each successfully implemented ticket, suggest: `/tk-close-and-sync <id> <change-id>`.
 
-<!-- ultrahardwork -->
+STOP here. Do NOT auto-close any tickets. Wait for user to run `/tk-close-and-sync` for each completed ticket.

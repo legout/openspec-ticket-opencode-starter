@@ -1,5 +1,5 @@
 ---
-description: Close a tk ticket and sync progress back to OpenSpec tasks [ultrahardwork]
+description: Close a tk ticket and sync progress back to OpenSpec tasks [ulw]
 agent: os-tk-agent
 ---
 
@@ -12,4 +12,4 @@ Now:
 3) Update `openspec/changes/$2/tasks.md` and check off the completed work.
 4) If all tickets are done, suggest: `openspec archive $2`
 
-<!-- ultrahardwork -->
+STOP here. Do NOT automatically archive. Wait for user confirmation.

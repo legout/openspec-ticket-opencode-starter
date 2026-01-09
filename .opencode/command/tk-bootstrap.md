@@ -1,5 +1,5 @@
 ---
-description: Create tk epic + 3–8 chunky task tickets for an OpenSpec change
+description: Create tk epic + 3–8 chunky task tickets for an OpenSpec change [ulw]
 agent: os-tk-agent
 permission:
   skill: allow
@@ -34,3 +34,5 @@ Output EXACT commands in order:
 4) What should appear in `tk ready` afterward
 
 **Important:** Do NOT start any ticket implementation. Users must explicitly trigger work with `/tk-start` or `/tk-start-multi`.
+
+STOP here. Wait for user to run the commands and proceed to next step.
