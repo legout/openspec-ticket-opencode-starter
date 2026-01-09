@@ -69,26 +69,26 @@ git commit -m "Add OpenSpec + ticket + OpenCode workflow"
 |      PLANNING       | ----> |         EXECUTION         | ----> |       ARCHIVE       |
 +---------------------+       +---------------------------+       +---------------------+
            |                                |                                |
- 1. /os-proposal                 2. /tk-bootstrap                       |
+  1. /os-proposal                 2. /tk-bootstrap                       |
            |                                |                                |
            v                                v                                |
       [spec files]                   [epic + tasks]                      |
-                                            |                                |
-                                            v                                |
-                                    3. /tk-queue                             |
-                                            |                                |
-                                            v                                |
-                                    4. /tk-start <id>                        |
-                                            |                                |
-                                            v                                |
-                                      (code & test)                          |
-                                            |                                |
-                                            v                                |
-                            5. /tk-close-and-sync <id> <os-id>               |
-                                            |            |                   |
-                                            |____________|                   |
-                                                  |                          v
-                                                  +-------------> 6. openspec archive
+                                             |                                |
+                                             v                                |
+                                     3. /tk-queue                             |
+                                             |                                |
+                                             v                                |
+                     4a. /tk-start <id>  OR  4b. /tk-start-multi <ids...>   |
+                                             |                                |
+                                             v                                |
+                                       (code & test)                          |
+                                             |                                |
+                                             v                                |
+                             5. /tk-close-and-sync <id> <os-id>               |
+                                             |            |                   |
+                                             |____________|                   |
+                                                   |                          v
+                                                   +-------------> 6. openspec archive
 ```
 
 ### Phase 1: Planning
@@ -161,16 +161,21 @@ Here's a concrete example implementing a "site-wide search" feature.
 ║  2. /tk-bootstrap search-feature "Implement site-wide search"                  ║
 ║     └─▶ Agent proposes: Epic + 4 Tasks (DB, API, UI, Tests)                    ║
 ║                                                                                ║
-║  3. Execute Loop:                                                              ║
+║  3a. Sequential Execution Loop:                                                 ║
 ║     ├─ /tk-queue           → Pick "DB: Search schema" (ab-101)                 ║
 ║     ├─ /tk-start ab-101     → Start work                                        ║
 ║     ├─ (implement + test)                                                      ║
 ║     └─ /tk-close-and-sync ab-101 search-feature                                ║
 ║        └─▶ Closes ticket, checks off "DB Schema" in OpenSpec                   ║
 ║                                                                                ║
-║  4. Repeat step 3 for API, UI, Tests...                                        ║
+║  3b. Parallel Execution (for independent tasks):                                 ║
+║     ├─ /tk-queue all       → See all ready tickets                            ║
+║     ├─ /tk-start-multi ab-101 ab-102 ab-103  → Start 3 in parallel           ║
+║     ├─ (all implement + test concurrently)                                      ║
+║     └─ /tk-close-and-sync ab-101 search-feature  (repeat for each)           ║
+║        └─▶ Closes tickets, checks off items in OpenSpec                       ║
 ║                                                                                ║
-║  5. openspec archive search-feature --yes                                      ║
+║  4. openspec archive search-feature --yes                                      ║
 ║     └─▶ Done! Change archived.                                                 ║
 ║                                                                                ║
 ╚════════════════════════════════════════════════════════════════════════════════╝
@@ -198,11 +203,38 @@ tk create --type task --parent ab-100 --title "Tests: Search integration"
 ```
 
 **Step 3: Execute and Sync**
+
+Option A — sequential:
 ```bash
 /tk-queue                             # See what's ready
 /tk-start ab-101                      # Start the DB task (shows context)
 # ... implement and test ...
 /tk-close-and-sync ab-101 search-feature  # Close and update spec
+```
+
+Option B — parallel (for independent tickets):
+```bash
+/tk-queue all                         # See all ready tickets
+/tk-start-multi ab-101 ab-102 ab-103  # Start multiple in parallel
+# ... all implement and test in parallel ...
+/tk-close-and-sync ab-101 search-feature  # Close each when done
+/tk-close-and-sync ab-102 search-feature
+/tk-close-and-sync ab-103 search-feature
+```
+
+**Step 4: Archive**
+```bash
+openspec archive search-feature --yes
+```
+
+Option B — parallel (for independent tickets):
+```bash
+/tk-queue all                         # See all ready tickets
+/tk-start-multi ab-101 ab-102 ab-103  # Start multiple in parallel
+# ... all implement and test in parallel ...
+/tk-close-and-sync ab-101 search-feature  # Close each when done
+/tk-close-and-sync ab-102 search-feature
+/tk-close-and-sync ab-103 search-feature
 ```
 
 **Step 4: Archive**
@@ -230,7 +262,7 @@ This workflow favors **3–8 deliverable-sized tickets** over fine-grained check
 | `/os-proposal <id>` | Create a new OpenSpec proposal. |
 | `/tk-queue [next\|all]` | Show `tk ready/blocked`. Use `next` (default) for one task, `all` for parallel work. |
 | `/tk-start <id>` | Start a ticket in the background (allows parallel implementation). |
-| `/tk-start-multi <id1> <id2> ...` | Start multiple tickets in parallel as background tasks. |
+| `/tk-start-multi <id1> <id2> ...` | Start multiple tickets in parallel (wait and summarize). Optional: `--parallel N` to set concurrency (default: 3). Only starts tickets in `tk ready`. |
 | `/tk-bootstrap <id> "<title>"` | Generate `tk create` commands for an epic + tasks. |
 | `/tk-close-and-sync <tk-id> <os-id>` | Add notes, close ticket, and sync OpenSpec progress. |
 

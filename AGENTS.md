@@ -28,6 +28,12 @@ This repo uses:
 - Always pick the next task using `tk ready`.
 - Mark progress with `tk start <id>`, notes with `tk add-note <id>`, and completion with `tk close <id>`.
 
+5a) Parallel execution (when safe)
+- Use `/tk-start-multi <id1> <id2> ...` to start multiple ready tickets in parallel.
+- Optional: append `--parallel N` to control concurrency (default: 3).
+- Only tickets in `tk ready` will be started; non-ready tickets are skipped.
+- Always wait for all workers to complete and summarize results.
+
 6) Keep OpenSpec tasks in sync
 - When a tk task is completed, check off the corresponding items in `openspec/changes/<change>/tasks.md`.
 - When all tickets under the epic are complete, archive the change:
@@ -42,13 +48,13 @@ This repo uses:
 
 ## Working loop (summary)
 
-Identify/create OpenSpec proposal → review/validate → bootstrap tk epic + 3–8 task tickets → loop: `tk ready` → `tk start` → implement → `tk close` → update OpenSpec tasks → all tickets done? → `openspec archive --yes`.
+Identify/create OpenSpec proposal → review/validate → bootstrap tk epic + 3–8 task tickets → loop: `tk ready` → `tk start` (or `/tk-start-multi <ids...>` for parallel) → implement → `tk close` → update OpenSpec tasks → all tickets done? → `openspec archive --yes`.
 ## oh-my-opencode Integration (Sisyphus)
 
 If you have `oh-my-opencode` installed, the **Sisyphus** engineering manager will orchestrate this workflow automatically.
 
 1. **Automatic Persistence:** Sisyphus will monitor the `tk` queue and OpenSpec status.
 2. **Delegation:** It will automatically delegate chunky implementation tasks to the `os-tk-agent`.
-3. **Parallelism:** Sisyphus will attempt to run multiple ready tickets in parallel where possible.
+3. **Parallelism:** Sisyphus will attempt to run multiple ready tickets in parallel where possible. Use `/tk-start-multi <ids...> [--parallel N]` to explicitly start multiple tickets in parallel with configurable concurrency.
 
 Commands in this workflow are marked with `[ultrahardwork]`, signaling to the orchestrator that they are part of the managed engineering flow.
