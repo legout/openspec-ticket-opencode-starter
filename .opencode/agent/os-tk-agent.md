@@ -1,4 +1,5 @@
 ---
+name: os-tk-agent
 description: Orchestrates OpenSpec + tk workflow (planning, execution, and tracking)
 mode: subagent
 temperature: 0.2

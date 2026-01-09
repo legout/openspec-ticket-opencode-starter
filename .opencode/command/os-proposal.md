@@ -2,7 +2,6 @@
 description: Create a new OpenSpec proposal for a feature or bugfix [ultrahardwork]
 sisyphus: true
 agent: os-tk-agent
-subtask: true
 ---
 
 Change ID: $1

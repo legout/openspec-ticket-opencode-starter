@@ -2,7 +2,6 @@
 description: Show details of an OpenSpec change and suggest ticket chunks [ultrahardwork]
 sisyphus: true
 agent: os-tk-agent
-subtask: true
 ---
 
 OpenSpec change: $ARGUMENTS
