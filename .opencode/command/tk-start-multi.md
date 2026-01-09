@@ -1,16 +1,24 @@
 ---
-description: Start multiple tickets in parallel as background tasks [ultrahardwork]
+description: Start multiple tickets in parallel (includes full implementation workflow) [ultrahardwork]
+agent: os-tk-agent
+background: true
 ---
 
 **Ticket IDs:** $ARGUMENTS
 
-For EACH ticket ID provided in `$ARGUMENTS`:
-- **CRITICAL:** Use your **slashcommand** tool to invoke `/tk-start <id>`. 
-- Do NOT run `tk start` in bash; you MUST use the `/tk-start` slash command so the background implementation logic is triggered.
+For EACH ticket ID provided in `$ARGUMENTS`, you MUST execute the full implementation workflow below. 
 
-**Important:** Each `/tk-start` call will automatically spawn a background task handled by the `os-tk-agent`.
+> [!IMPORTANT]
+> You are responsible for the actual implementation, not just marking them as started. If your execution environment allow, handle these tickets in parallel.
 
-After initiating all tasks using the tool, confirm to the user:
-> "Started <N> tickets in parallel: <id1>, <id2>, ... Each is running as a background task via `os-tk-agent`."
+### Workflow for each Ticket <id>:
+1. **Initialize:** Run `tk start <id>` to mark it as in-progress.
+2. **Context:** Show the ticket details: !`tk show <id>`
+3. **Analysis:** Summarize the acceptance criteria and key deliverables for this ticket.
+4. **Implementation:** Create and execute a detailed implementation plan (write code, refactor, etc.).
+5. **Verification:** Run all relevant tests and validate the implementation.
+6. **Completion:** Notify the user when the ticket is fully implemented.
+
+Confirm to the user which tickets you are starting and provide updates as you progress through the implementation phases for each.
 
 <!-- ultrahardwork -->
