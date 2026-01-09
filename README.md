@@ -229,6 +229,7 @@ This workflow favors **3–8 deliverable-sized tickets** over fine-grained check
 | `/os-show <id>` | Show change details and suggest ticket chunks. |
 | `/tk-queue [next\|all]` | Show `tk ready/blocked`. Use `next` (default) for one task, `all` for parallel work. |
 | `/tk-start <id>` | Start a ticket in the background (allows parallel implementation). |
+| `/tk-start-multi <id1> <id2> ...` | Start multiple tickets in parallel as background tasks. |
 | `/tk-bootstrap <id> "<title>"` | Generate `tk create` commands for an epic + tasks. |
 | `/tk-close-and-sync <tk-id> <os-id>` | Add notes, close ticket, and sync OpenSpec progress. |
 

@@ -25,4 +25,4 @@ Blocked:
 
 **End your response by asking:**
 - For `next` or empty: *"Would you like me to run `/tk-start <ticket-id>` to begin work on this ticket?"*
-- For `all`: *"Would you like me to start all of these tickets in parallel? (yes/no)"*
+- For `all`: *"Would you like me to start all of these tickets in parallel? Run `/tk-start-multi <id1> <id2> ...` to begin."*
