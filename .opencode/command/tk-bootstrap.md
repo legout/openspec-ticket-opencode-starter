@@ -1,9 +1,34 @@
 ---
-description: Create tk epic + 3–8 chunky task tickets for an OpenSpec change [ulw]
+description: Create tk epic + 3–8 chunky task tickets for an OpenSpec change [ultrahardwork]
 agent: os-tk-agent
 permission:
   skill: allow
 ---
+
+# COMMAND CONTRACT (MUST OBEY)
+
+You are running `/tk-bootstrap`, which is a **VIEW-ONLY** command.
+
+## ALLOWED
+- `tk query`, `openspec list`, `openspec show <id>`, `openspec validate <id>`
+- Summarize, analyze, and recommend
+
+## FORBIDDEN
+- `tk create`, `tk start`, `tk close`, `tk add-note`, `tk dep`, or any other mutating `tk` command
+- Edit files or write code
+- Any bash commands that modify state
+
+## ENFORCEMENT
+If you are about to output `tk create ...` commands:
+1. STOP immediately
+2. Remove all content after the command contract
+3. Only output the exact `tk create ...` commands, nothing else
+
+---
+
+# COMMAND CONTRACT (MUST OBEY)
+
+You are running `/tk-bootstrap`, which is a **VIEW-ONLY** command.
 
 OpenSpec change-id: $1
 Epic title: $2
@@ -13,10 +38,6 @@ Use your **openspec** skill to understand the change and your **ticket** skill t
 Show the change:
 !`openspec show $1`
 
-Scan existing open tickets to avoid duplication:
-!`tk query '.status == "open"'`
-> Note: Use `tk query` without any filter to get all tickets.
-
 Create a tk epic and 3–8 task tickets under it.
 
 Requirements:
@@ -25,7 +46,6 @@ Requirements:
 - Use `--acceptance` for measurable done criteria (tests, behavior, docs).
 - Use `tk dep` only for real blockers.
 - Keep it chunky: deliverables (DB/API/UI/tests/docs), not one per checkbox.
-- **Avoid duplicates:** Before proposing a task, check if an existing open ticket (from the scan above) already covers >90% of the same work. If yes, do NOT create a new task—note that existing ticket should be used instead.
 
 Output EXACT commands in order:
 1) `tk create ...` epic
@@ -33,6 +53,4 @@ Output EXACT commands in order:
 3) `tk dep ...` lines (if needed)
 4) What should appear in `tk ready` afterward
 
-**Important:** Do NOT start any ticket implementation. Users must explicitly trigger work with `/tk-start` or `/tk-start-multi`.
-
-STOP here. Wait for user to run the commands and proceed to next step.
+<!-- ultrahardwork -->

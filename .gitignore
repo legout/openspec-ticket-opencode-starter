@@ -2,3 +2,7 @@
 .idea/
 .vscode/
 *.log
+REFACTORING_PLAN_OPUS.md
+REFACTORING_PLAN.md
+.worktrees/
+.tickets/

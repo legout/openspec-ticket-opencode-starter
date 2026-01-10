@@ -1,0 +1,289 @@
+#!/usr/bin/env bash
+# os-tk — repo-local initializer and config applier for os-tk workflow
+#
+# This script:
+# - Creates/updates os-tk.config.json with defaults
+# - Applies config to .opencode/agent frontmatter (models, temps)
+# - Ensures .worktrees/ is in .gitignore when worktrees are enabled
+#
+# Usage:
+#   ./os-tk init           # Create initial config + apply to agents
+#   ./os-tk init --worktree   # Force worktree mode (safe)
+#   ./os-tk init --simple     # Force simple mode (no worktrees)
+#   ./os-tk apply            # Re-apply config to agents
+
+set -euo pipefail
+
+CONFIG_FILE="os-tk.config.json"
+OPENCODE_AGENT_DIR=".opencode/agent"
+PLANNER_AGENT="$OPENCODE_AGENT_DIR/os-tk-planner.md"
+WORKER_AGENT="$OPENCODE_AGENT_DIR/os-tk-worker.md"
+
+usage() {
+  echo "Usage: $0 [command] [options]"
+  echo ""
+  echo "Commands:"
+  echo "  init [worktree|simple]    Initialize os-tk config and apply to agents"
+  echo "  apply                     Re-apply config to agents (useful after manual edits)"
+  echo ""
+  echo "Options for 'init':"
+  echo "  --worktree   Enable worktree mode (safe parallel, default)"
+  echo "  --simple     Disable worktrees (simple/unsafe mode)"
+  echo ""
+  echo "Config is stored in: $CONFIG_FILE"
+  exit 1
+}
+
+default_config() {
+  cat << 'JSON'
+{
+  "useWorktrees": true,
+  "worktreeDir": ".worktrees",
+  "defaultParallel": 3,
+  "mainBranch": "main",
+  "autoPush": true,
+  "unsafe": {
+    "allowParallel": false,
+    "allowDirtyDone": false,
+    "commitStrategy": "prompt"
+  },
+  "planner": {
+    "model": "openai/gpt-5.2",
+    "reasoning": "high",
+    "temperature": 0
+  },
+  "worker": {
+    "model": "zai-coding-plan/glm-4.7",
+    "fallbackModels": ["minimax/MiniMax-M2.1"],
+    "temperature": 0.2
+  }
+}
+JSON
+}
+
+rebuild_agent_from_template() {
+  local agent_file="$1"
+  local role="$2"
+  local model="$3"
+  
+  cat > "$agent_file" << "AGENT"
+---
+name: os-tk-$role
+description: OpenSpec + ticket $role (view-only vs execution)
+mode: subagent
+temperature: 0.2
+permission:
+  bash: allow
+  skill: allow
+  edit: allow
+  write: allow
+---
+
+# OpenSpec + Ticket $role
+
+You implement the $role phase of the workflow.
+
+AGENT
+
+  if [[ "$role" == "planner" ]]; then
+    cat >> "$agent_file" << 'AGENT'
+
+You coordinate **planning and review** phases of the workflow. You **NEVER implement** code.
+
+## Core Rules
+
+- Read-only operations only (viewing status, showing specs, generating plans).
+- Never edit files, write code, run tests, or implement plans.
+- Never spawn worker subtasks.
+- All planning commands (os-change, tk-queue, tk-bootstrap) use this agent.
+
+## Command Precedence
+
+When invoked via a command (e.g., \`/os-change\`, \`/tk-queue\`):
+- The command markdown file is the HIGHEST PRIORITY contract.
+- If any conflict between this description, skills, or general rules and the command's contract:
+  - **The command contract wins. Always.**
+- If a command says STOP → you STOP.
+
+## View-Only Contracts
+
+For view-only commands, these actions are **FORBIDDEN**:
+
+### ALLOWED
+- \`openspec list\`, \`openspec show <id>\`, \`openspec validate <id>\`
+- \`tk ready\`, \`tk blocked\`, \`tk show <id>\`, \`tk query <filter>\`
+- Summarize, analyze, and recommend
+
+### FORBIDDEN
+- \`tk start\`, \`tk close\`, \`tk add-note\`, or any mutating \`tk\` command
+- Edit files, write code, run tests, or implement plans
+- Any bash commands that modify state
+
+## Self-Check (Before Responding)
+
+Before responding to a view-only command, confirm you did NOT:
+- [ ] Suggest any implementation plan or coding steps
+- [ ] Propose running \`tk start\`, \`tk add-note\`, or \`tk close\`
+- [ ] Edit or propose edits to any files
+
+If you did any of the above, remove it and redirect to \`/tk-start\`.
+
+## Worktree Awareness
+
+- \`tk-queue\` must exclude active worktrees (\`.worktrees/<id>/\`) from "ready to start".
+- When \`useWorktrees\` is false, there are no worktrees; all "ready" tickets are eligible.
+AGENT
+
+  elif [[ "$role" == "worker" ]]; then
+    cat >> "$agent_file" << 'AGENT'
+
+You implement **ticket deliverables and acceptance criteria** within isolated contexts.
+
+## Core Rules
+
+- Implement exactly one ticket per invocation.
+- Run tests to validate implementation.
+- Do NOT close tickets (that is \`/tk-done\`'s job).
+- Do NOT archive OpenSpec (that is \`/tk-done\`'s job).
+- Do NOT merge branches or push (those are \`/tk-done\`'s job).
+- Edit OpenSpec \`tasks.md\` only as directed by planner/\`/tk-done\` sync.
+
+## Allowed Actions
+
+- Edit files, write code, refactor as needed.
+- Run tests and fix failures.
+- Read \`tk show <id>\` for ticket context.
+
+## Forbidden Actions
+
+- Closing tickets (\`tk close\`)
+- Archiving OpenSpec
+- Merging branches or pushing
+- Editing OpenSpec \`tasks.md\` (that is planner/\`/tk-done\`'s sync job)
+- Implementing multiple tickets in one flow
+
+## Worktree Awareness
+
+- When \`useWorktrees\` is true, you operate in an isolated worktree: \`.worktrees/<ticket-id>/\`.
+- When \`useWorktrees\` is false, you operate in the current working tree.
+
+## Output
+
+When implementation is complete:
+- Summarize what was implemented.
+- List any files created/modified.
+- Explicitly instruct the user to run \`/tk-done <id> [change-id]\`.
+AGENT
+
+  else
+    echo "Error: Unknown role: $role"
+    exit 1
+  fi
+}
+
+ensure_gitignore_worktrees() {
+  local config="$1"
+  local use_worktrees
+  use_worktrees=$(echo "$config" | jq -r '.useWorktrees // false')
+  
+  if [[ "$use_worktrees" == "true" ]]; then
+    local worktree_dir=$(echo "$config" | jq -r '.worktreeDir // ".worktrees"')
+    if ! grep -q "^$worktree_dir$" .gitignore 2>/dev/null; then
+      echo ".worktrees/" >> .gitignore
+      echo "Added .worktrees/ to .gitignore"
+    else
+      echo ".worktrees/ already in .gitignore"
+    fi
+  else
+    echo "useWorktrees is false; skipping .worktrees/ gitignore"
+  fi
+}
+
+apply_config_to_agents() {
+  local config="$1"
+  echo "Applying config to agents..."
+  
+  if [[ ! -d "$OPENCODE_AGENT_DIR" ]]; then
+    mkdir -p "$OPENCODE_AGENT_DIR"
+    echo "Created directory: $OPENCODE_AGENT_DIR"
+  fi
+  
+  # Extract planner config
+  local planner_model
+  planner_model=$(echo "$config" | jq -r '.planner.model // "openai/gpt-5.2"')
+  
+  # Extract worker config  
+  local worker_model
+  worker_model=$(echo "$config" | jq -r '.worker.model // "zai-coding-plan/glm-4.7"')
+  
+  # Rebuild agents from templates (model is passed but not currently used in template)
+  rebuild_agent_from_template "$PLANNER_AGENT" "planner" "$planner_model"
+  rebuild_agent_from_template "$WORKER_AGENT" "worker" "$worker_model"
+  
+  echo "  - Created/updated: $PLANNER_AGENT"
+  echo "  - Created/updated: $WORKER_AGENT"
+}
+
+cmd_init() {
+  local mode="${1:-worktree}"
+  
+  if [[ ! -f "$CONFIG_FILE" ]]; then
+    default_config > "$CONFIG_FILE"
+    echo "Created default config: $CONFIG_FILE"
+  else
+    echo "Config already exists: $CONFIG_FILE (will preserve existing values)"
+  fi
+  
+  if [[ "$mode" == "worktree" ]]; then
+    echo "Enabling worktree mode (safe parallel)..."
+    jq ".useWorktrees = true" "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+  elif [[ "$mode" == "simple" ]]; then
+    echo "Enabling simple mode (no worktrees)..."
+    jq ".useWorktrees = false" "$CONFIG_FILE" > "${CONFIG_FILE}.tmp" && mv "${CONFIG_FILE}.tmp" "$CONFIG_FILE"
+  fi
+  
+  local config
+  config=$(cat "$CONFIG_FILE")
+  ensure_gitignore_worktrees "$config"
+  apply_config_to_agents "$config"
+  
+  echo ""
+  echo "os-tk initialized!"
+  echo ""
+  echo "Next steps:"
+  echo "  1. Edit $CONFIG_FILE to customize models/defaults"
+  echo "  2. Run: ./os-tk apply to update agents after config changes"
+}
+
+cmd_apply() {
+  if [[ ! -f "$CONFIG_FILE" ]]; then
+    echo "Error: Config file not found: $CONFIG_FILE"
+    echo "Run './os-tk init' first."
+    exit 1
+  fi
+  
+  local config
+  config=$(cat "$CONFIG_FILE")
+  ensure_gitignore_worktrees "$config"
+  apply_config_to_agents "$config"
+  
+  echo "Config applied to agents"
+}
+
+main() {
+  local command="${1:-}"
+  
+  case "$command" in
+    init)
+      cmd_init "${2:-}"
+      ;;
+    apply)
+      cmd_apply
+      ;;
+    *)
+      usage
+      ;;
+  esac
+}
+
+main "$@"
