@@ -297,6 +297,14 @@ For more details, see the `docs/` folder:
 
 ---
 
-## License & Credits
+## License
 
-MIT. Integration pattern for [OpenSpec](https://github.com/fission-ai/openspec), [ticket](https://github.com/wedow/ticket), and [OpenCode](https://opencode.dev).
+MIT
+
+## Credits
+
+This workflow is built on and extends:
+
+- **[OpenSpec](https://github.com/fission-ai/openspec)** — Spec-driven changes (proposal → apply → archive)
+- **[ticket (tk)](https://github.com/wedow/ticket)** — Git-backed task tracking with ready/blocked queues
+- **[OpenCode](https://opencode.dev)** — Multi-agent orchestration via slash commands
