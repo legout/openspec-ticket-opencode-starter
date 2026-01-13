@@ -3,15 +3,25 @@ description: Show tk ready/blocked and suggest next work item(s) (view-only, doe
 agent: os-tk-planner
 ---
 
-# /tk-queue [next|all|<change-id>]
+# /tk-queue [FLAGS]
 
-**Arguments:** $ARGUMENTS
+**Flags:**
+- `--next` - Recommend ONE ticket to start (default if no flags provided)
+- `--all` - List ALL ready tickets
+- `--change <id>` - Filter tickets to a specific OpenSpec change
+
+**Examples:**
+- `/tk-queue` or `/tk-queue --next` - Show one recommended ticket
+- `/tk-queue --all` - List all ready tickets
+- `/tk-queue --change my-feature` - Filter tickets for a specific change
 
 ## Mode Detection
 
-- If `$ARGUMENTS` is empty or `next`: Recommend ONE ticket to start
-- If `$ARGUMENTS` is `all`: List ALL ready tickets
-- If `$ARGUMENTS` matches a change-id pattern: Filter to that OpenSpec change
+Parse flags from `$ARGUMENTS`:
+- If no flags or `--next` present: Recommend ONE ticket to start
+- If `--all` present: List ALL ready tickets
+- If `--change <id>` present: Filter to that OpenSpec change
+- Flags can be combined: `/tk-queue --all --change my-feature`
 
 ## Step 1: Gather queue status
 
@@ -30,43 +40,46 @@ If `useWorktrees: true`:
 - Mark those ticket IDs as "in progress (worktree active)"
 - Exclude them from "ready to start" recommendations
 
-## Step 3: Filter by change (if specified)
+## Step 3: Filter by change (if --change flag provided)
 
-If `$ARGUMENTS` looks like a change-id:
+If `--change <id>` flag is present:
 1. Find the epic: `tk query '.external_ref == "openspec:<change-id>"'`
 2. List tasks under that epic: `tk query '.parent == "<epic-id>"'`
 3. Show only those tickets in ready/blocked output
 
 ## Step 4: Output
 
-**For `next` or empty:**
+**For `--next` or no flags:**
 Pick ONE ready ticket and show:
 - Ticket ID
 - Title & brief summary
 - Why it's a good choice (e.g., no dependencies, unblocks others)
 
-**For `all`:**
+**For `--all`:**
 List ALL ready tickets with:
 - Ticket ID
 - Title
 - Brief status note
 
-**For `<change-id>`:**
+**For `--change <id>`:**
 Show tickets grouped:
 - Ready (can start now)
 - In progress (worktree active or `tk status == in_progress`)
 - Blocked (and what's blocking them)
 
+**For combined flags (e.g., `--all --change <id>`):**
+Apply both filters - show all tickets for the specified change
+
 ## Step 5: Suggest next action
 
-**For `next` or empty:**
+**For `--next` or no flags:**
 > Would you like me to start this ticket? Run `/tk-start <ticket-id>`
 
-**For `all`:**
+**For `--all`:**
 > To start one ticket: `/tk-start <ticket-id>`
 > To start multiple in parallel: `/tk-start <id1> <id2> <id3>`
 
-**For `<change-id>`:**
+**For `--change <id>`:**
 > Ready tickets for this change can be started with `/tk-start <id>`
 
 ---
