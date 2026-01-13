@@ -3,7 +3,7 @@ name: os-tk-planner
 description: OpenSpec + ticket planner (view-only vs execution)
 model: openai/gpt-5.2
 mode: subagent
-temperature: 0
+temperature: 0.5
 reasoningEffort: high
 permission:
   bash: allow

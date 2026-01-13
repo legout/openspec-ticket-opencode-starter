@@ -3,7 +3,7 @@ name: os-tk-worker
 description: OpenSpec + ticket worker (view-only vs execution)
 model: zai-coding-plan/glm-4.7
 mode: subagent
-temperature: 0.2
+temperature: 0.75
 
 permission:
   bash: allow
