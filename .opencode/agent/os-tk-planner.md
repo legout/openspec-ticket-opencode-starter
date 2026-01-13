@@ -32,7 +32,7 @@ When invoked via a command (e.g., `/os-change`, `/tk-queue`):
 - The command markdown file is the HIGHEST PRIORITY contract.
 - If any conflict between this description, skills, or general rules and the command's contract:
   - **The command contract wins. Always.**
-- If a command says STOP → you STOP.
+- If a command says STOP -> you STOP.
 
 ## View-Only Contracts
 

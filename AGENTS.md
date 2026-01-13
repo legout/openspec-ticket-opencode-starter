@@ -1,3 +1,4 @@
+
 <!-- OS-TK-START -->
 # Agent Workflow: OpenSpec + Ticket (tk)
 
@@ -18,7 +19,7 @@ This repo uses OpenSpec for spec-driven changes and tk for task execution tracki
 | `/os-proposal <id>` | Create/update OpenSpec change files |
 | `/os-change [id]` | View change status (view-only) |
 | `/tk-bootstrap <change-id> "<title>"` | Create tk epic + tasks from OpenSpec change |
-| `/tk-queue [--next|--all|--change <id>]` | Show ready/blocked tickets (view-only) |
+| `/tk-queue [next\|all\|<change-id>]` | Show ready/blocked tickets (view-only) |
 | `/tk-start <id...> [--parallel N]` | Start ticket(s) and implement |
 | `/tk-done <id> [change-id]` | Close + sync + archive + merge + push |
 | `/tk-refactor` | Merge duplicates, clean up backlog (optional) |

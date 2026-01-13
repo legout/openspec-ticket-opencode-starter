@@ -1,6 +1,6 @@
 ---
 description: Design and create tk epic + 3–8 chunky task tickets for an OpenSpec change [ulw]
-agent: os-tk-orchestrator
+agent: os-tk-bootstrapper
 permission:
   skill: allow
   bash: allow
@@ -89,26 +89,6 @@ Design the dependencies:
 - Identify which tickets block others
 - Only add dependencies for real blockers
 
-## Step 3b: File prediction requirements
-
-For each ticket, predict which files will be modified or created:
-
-- **Analyze the deliverables:** Read the acceptance criteria and identify concrete file paths
-- **Be specific:** Use actual file paths (e.g., `src/api/auth.ts`, not `auth code`)
-- **Over-predict safely:** When uncertain, include the file rather than exclude it
-- **Empty arrays are valid:** Use `files-modify: []` or `files-create: []` when applicable
-
-**Example predictions:**
-```yaml
-files-modify:
-  - src/api/auth.ts
-  - src/middleware/auth.ts
-files-create:
-  - src/types/UserCredentials.ts
-```
-
-**Note:** File predictions enable parallel execution safety by detecting overlaps. Tickets modifying the same file will be serialized automatically.
-
 ---
 
 ## Step 4: Generate Commands
@@ -147,12 +127,8 @@ Output a summary:
 ### Tasks (N total)
 1. <task-1-title>
    Acceptance: <criteria>
-   Files modify: <files>
-   Files create: <files>
 2. <task-2-title>
    Acceptance: <criteria>
-   Files modify: <files>
-   Files create: <files>
 ...
 
 ### Dependencies
@@ -166,14 +142,8 @@ tk create --type epic --external-ref "openspec:<change-id>" --title "<epic-title
 # Assume epic ID is <epic-id>
 
 tk create --type task --parent <epic-id> --title "<task-1>" --acceptance "<criteria>"
-# Then edit ticket file to add:
-# files-modify:
-#   - <file-path-1>
-#   - <file-path-2>
-# files-create: []
-
 tk create --type task --parent <epic-id> --title "<task-2>" --acceptance "<criteria>"
-# Then edit ticket file to add file predictions...
+...
 
 tk dep <blocked-id> <blocker-id>
 ...
@@ -195,20 +165,9 @@ To execute, re-run with `--yes`:
 
 1. Run the epic creation command and capture the epic ID
 2. Run each task creation command with the actual epic ID
-3. For each created ticket, edit the file to add `files-modify` and `files-create` predictions:
-   - Read the ticket's acceptance criteria
-   - Analyze the codebase to predict which files will be touched
-   - Edit the ticket's YAML frontmatter to add:
-     ```yaml
-     files-modify:
-       - path/to/file1.ts
-       - path/to/file2.ts
-     files-create:
-       - path/to/newfile.ts
-     ```
-4. Run each dependency command with actual task IDs
-5. Check if `AGENTS.md` has the OS-TK block; if missing, add it
-6. Show final state:
+3. Run each dependency command with actual task IDs
+4. Check if `AGENTS.md` has the OS-TK block; if missing, add it
+5. Show final state:
    !`tk ready`
 
 Output a summary:
@@ -218,7 +177,6 @@ Output a summary:
 - Epic: `<epic-id>` — "<epic-title>"
 - Tasks created: N
 - Dependencies added: M
-- File predictions added: (auto-generated during analysis)
 - Ready to start: <list of ready ticket IDs>
 
 Next step:
