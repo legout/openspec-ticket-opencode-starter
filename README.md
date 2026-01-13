@@ -156,7 +156,7 @@ Running `os-tk init` creates/updates these files in your project:
 .opencode/
   agent/
     os-tk-planner.md       # View-only planning agent
-    os-tk-bootstrapper.md  # Ticket design agent (strong reasoning)
+    os-tk-orchestrator.md  # Ticket design agent (strong reasoning)
     os-tk-worker.md        # Implementation agent
   command/
     os-change.md           # View OpenSpec changes

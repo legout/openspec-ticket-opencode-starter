@@ -1,6 +1,6 @@
 # Model Selection Rationale
 
-This document explains the default model choices in `.os-tk/config.json` and the reasoning behind using different models for the **planner**, **bootstrapper**, and **worker** roles.
+This document explains the default model choices in `.os-tk/config.json` and the reasoning behind using different models for the **planner**, **orchestrator**, and **worker** roles.
 
 ---
 
@@ -11,12 +11,12 @@ The os-tk workflow uses three specialized agents with distinct responsibilities:
 | Agent | Role | Key Trait |
 |-------|------|-----------|
 | **Planner** (`os-tk-planner`) | View-only analysis, queue inspection | View-only, high reasoning |
-| **Bootstrapper** (`os-tk-bootstrapper`) | Ticket design and creation | Strong reasoning, can run `tk create/dep` |
+| **Orchestrator** (`os-tk-orchestrator`) | Ticket design and creation | Strong reasoning, can run `tk create/dep` |
 | **Worker** (`os-tk-worker`) | Code implementation | Edit/write, execution speed |
 
 This separation matters because:
 - **Planning** tasks are strictly view-only (no mutations)
-- **Bootstrapping** requires strong reasoning to design good tickets, plus the ability to run `tk create`/`tk dep`
+- **Orchestrating** requires strong reasoning to design good tickets, plus the ability to run `tk create`/`tk dep`
 - **Implementation** benefits from speed and cost efficiency (writing code, running tests, iterating quickly)
 
 ---
@@ -51,13 +51,13 @@ Planning and bootstrapping happen infrequently (once per feature/change), while 
 
 ---
 
-## Bootstrapper: Strong Reasoning + Ticket Creation
+## Orchestrator: Strong Reasoning + Ticket Creation
 
 **Default:** Same model as planner (`openai/gpt-5.2` with `reasoningEffort: high`)
 
-### Why a separate bootstrapper agent?
+### Why a separate orchestrator agent?
 
-The bootstrapper handles:
+The orchestrator handles:
 - Analyzing OpenSpec proposals deeply
 - Decomposing work into 3-8 "chunky" tickets
 - Setting up dependencies correctly
@@ -78,7 +78,7 @@ The worker uses a fast OSS model optimized for code generation. Ticket design be
 
 ### The solution: a third agent
 
-The bootstrapper combines:
+The orchestrator combines:
 - **Planner's model** (strong reasoning)
 - **Worker's bash permission** (can run `tk` commands)
 - **Restricted file access** (can only update `AGENTS.md` markers, not code)

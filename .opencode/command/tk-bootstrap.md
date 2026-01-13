@@ -1,6 +1,6 @@
 ---
 description: Design and create tk epic + 3–8 chunky task tickets for an OpenSpec change [ulw]
-agent: os-tk-bootstrapper
+agent: os-tk-orchestrator
 permission:
   skill: allow
   bash: allow
