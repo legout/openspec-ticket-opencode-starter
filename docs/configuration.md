@@ -35,9 +35,9 @@ The os-tk workflow is configured via `.os-tk/config.json`. This document explain
     "createTicketsFor": ["error"],
     "skipTags": ["no-review", "wip"],
     "scouts": [
-      { "id": "opus45", "model": "google/antigravity-claude-opus-4-5-thinking", "reasoningEffort": "high" },
+      { "id": "opus45", "model": "google/antigravity-claude-opus-4-5-thinking", "reasoningEffort": "max" },
       { "id": "gpt52",  "model": "openai/gpt-5.2-codex", "reasoningEffort": "high" },
-      { "id": "mini",   "model": "openai/gpt-5.1-codex-mini", "reasoningEffort": "medium" },
+      { "id": "mini",   "model": "openai/gpt-5.1-codex-mini", "reasoningEffort": "high" },
       { "id": "grok",   "model": "opencode/grok-fast" }
     ],
     "adaptive": {

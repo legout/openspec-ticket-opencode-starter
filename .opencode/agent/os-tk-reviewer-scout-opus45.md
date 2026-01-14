@@ -4,7 +4,7 @@ description: OpenSpec + ticket review scout (opus45)
 model: google/antigravity-claude-opus-4-5-thinking
 mode: subagent
 temperature: 0
-reasoningEffort: high
+reasoningEffort: max
 permission:
   bash: allow
   skill: allow

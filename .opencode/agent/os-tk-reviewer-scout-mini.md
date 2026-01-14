@@ -4,7 +4,7 @@ description: OpenSpec + ticket review scout (mini)
 model: openai/gpt-5.1-codex-mini
 mode: subagent
 temperature: 0
-reasoningEffort: medium
+reasoningEffort: high
 permission:
   bash: allow
   skill: allow
