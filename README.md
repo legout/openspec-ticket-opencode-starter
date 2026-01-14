@@ -102,6 +102,7 @@ set -gx PATH $HOME/.local/bin $PATH
 | `claude` | `.claude/` | Claude Code format |
 | `droid` | `.factory/` | Factory/Droid format |
 | `universal` | `.agent/` | Platform-agnostic format |
+| `pi` | `.pi/` | Pi coding agent (requires subagent extension) |
 | `all` | All above | Install all platforms |
 
 Examples:
@@ -216,20 +217,20 @@ Running `os-tk init` creates/updates these files in your project:
 
 # Claude Code (--agent claude)
 .claude/
-  agents/planner.md, worker.md, reviewer.md
-  commands/tk/start.md, done.md, queue.md, ...
+  agents/os-tk-planner.md, os-tk-worker.md, os-tk-reviewer.md
+  commands/os-breakdown.md, os-change.md, os-proposal.md, tk-bootstrap.md, ...
   skills/openspec/, ticket/, os-tk-workflow/
 
 # Factory/Droid (--agent droid)
 .factory/
-  droids/planner.md, worker.md, reviewer.md
-  commands/tk-start.md, tk-done.md, ...
+  droids/os-tk-planner.md, os-tk-worker.md, os-tk-reviewer.md
+  commands/os-breakdown.md, os-change.md, os-proposal.md, tk-bootstrap.md, ...
   skills/openspec/, ticket/, os-tk-workflow/
 
 # Universal (--agent universal)
 .agent/
-  agents/planner.md, worker.md, reviewer.md
-  commands/tk-start.md, tk-done.md, ...
+  agents/os-tk-planner.md, os-tk-worker.md, os-tk-reviewer.md
+  commands/os-breakdown.md, os-change.md, os-proposal.md, tk-bootstrap.md, ...
   skills/openspec.md, ticket.md, os-tk-workflow.md
 
 AGENTS.md                  # Agent-agnostic workflow rules (all platforms)

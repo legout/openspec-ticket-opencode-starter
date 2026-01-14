@@ -17,7 +17,7 @@ set -euo pipefail
 # =============================================================================
 # VERSION (single source of truth)
 # =============================================================================
-VERSION="0.3.2"
+VERSION="0.4.0"
 
 # =============================================================================
 # PATHS
@@ -222,19 +222,19 @@ OPENCODE_FILES=(
 
 # Claude Code files
 CLAUDE_FILES=(
-  "agents/planner.md"
-  "agents/worker.md"
-  "agents/reviewer.md"
-  "commands/os/breakdown.md"
-  "commands/os/change.md"
-  "commands/os/proposal.md"
-  "commands/tk/bootstrap.md"
-  "commands/tk/start.md"
-  "commands/tk/done.md"
-  "commands/tk/queue.md"
-  "commands/tk/review.md"
-  "commands/tk/run.md"
-  "commands/tk/refactor.md"
+  "agents/os-tk-planner.md"
+  "agents/os-tk-worker.md"
+  "agents/os-tk-reviewer.md"
+  "commands/os-breakdown.md"
+  "commands/os-change.md"
+  "commands/os-proposal.md"
+  "commands/tk-bootstrap.md"
+  "commands/tk-done.md"
+  "commands/tk-queue.md"
+  "commands/tk-refactor.md"
+  "commands/tk-review.md"
+  "commands/tk-run.md"
+  "commands/tk-start.md"
   "skills/openspec/SKILL.md"
   "skills/ticket/SKILL.md"
   "skills/os-tk-workflow/SKILL.md"
@@ -242,19 +242,19 @@ CLAUDE_FILES=(
 
 # Factory/Droid files
 DROID_FILES=(
-  "droids/planner.md"
-  "droids/worker.md"
-  "droids/reviewer.md"
+  "droids/os-tk-planner.md"
+  "droids/os-tk-worker.md"
+  "droids/os-tk-reviewer.md"
   "commands/os-breakdown.md"
   "commands/os-change.md"
   "commands/os-proposal.md"
   "commands/tk-bootstrap.md"
-  "commands/tk-start.md"
   "commands/tk-done.md"
   "commands/tk-queue.md"
+  "commands/tk-refactor.md"
   "commands/tk-review.md"
   "commands/tk-run.md"
-  "commands/tk-refactor.md"
+  "commands/tk-start.md"
   "skills/openspec/SKILL.md"
   "skills/ticket/SKILL.md"
   "skills/os-tk-workflow/SKILL.md"
@@ -262,22 +262,44 @@ DROID_FILES=(
 
 # Universal .agent files
 UNIVERSAL_FILES=(
-  "agents/planner.md"
-  "agents/worker.md"
-  "agents/reviewer.md"
+  "agents/os-tk-planner.md"
+  "agents/os-tk-worker.md"
+  "agents/os-tk-reviewer.md"
   "commands/os-breakdown.md"
   "commands/os-change.md"
   "commands/os-proposal.md"
   "commands/tk-bootstrap.md"
-  "commands/tk-start.md"
   "commands/tk-done.md"
   "commands/tk-queue.md"
+  "commands/tk-refactor.md"
   "commands/tk-review.md"
   "commands/tk-run.md"
-  "commands/tk-refactor.md"
+  "commands/tk-start.md"
   "skills/openspec.md"
   "skills/ticket.md"
   "skills/os-tk-workflow.md"
+)
+
+# Pi files
+PI_FILES=(
+  "agents/os-tk-planner.md"
+  "agents/os-tk-worker.md"
+  "agents/os-tk-reviewer.md"
+  "agents/os-tk-reviewer-agg-fast.md"
+  "agents/os-tk-reviewer-agg-strong.md"
+  "prompts/os-breakdown.md"
+  "prompts/os-change.md"
+  "prompts/os-proposal.md"
+  "prompts/tk-bootstrap.md"
+  "prompts/tk-done.md"
+  "prompts/tk-queue.md"
+  "prompts/tk-refactor.md"
+  "prompts/tk-review.md"
+  "prompts/tk-run.md"
+  "prompts/tk-start.md"
+  "skills/openspec/SKILL.md"
+  "skills/ticket/SKILL.md"
+  "skills/os-tk-workflow/SKILL.md"
 )
 
 # Default agent platforms (comma-separated)
@@ -289,7 +311,7 @@ parse_agents() {
   
   # Handle "all" keyword
   if [[ "$input" == "all" ]]; then
-    echo "opencode,claude,droid,universal"
+    echo "opencode,claude,droid,universal,pi"
     return
   fi
   
@@ -297,10 +319,10 @@ parse_agents() {
   local IFS=','
   for agent in $input; do
     case "$agent" in
-      opencode|claude|droid|universal) ;;
+      opencode|claude|droid|universal|pi) ;;
       *)
         echo "Error: Unknown agent platform: $agent" >&2
-        echo "Valid options: opencode, claude, droid, universal, all" >&2
+        echo "Valid options: opencode, claude, droid, universal, pi, all" >&2
         exit 1
         ;;
     esac
@@ -317,6 +339,7 @@ get_agent_dir() {
     claude)    echo ".claude" ;;
     droid)     echo ".factory" ;;
     universal) echo ".agent" ;;
+    pi)        echo ".pi" ;;
     *)
       echo "Error: Unknown agent: $agent" >&2
       return 1
@@ -332,6 +355,7 @@ get_template_dir() {
     claude)    echo ".claude" ;;
     droid)     echo ".factory" ;;
     universal) echo ".agent" ;;
+    pi)        echo ".pi" ;;
     *)
       echo "Error: Unknown agent: $agent" >&2
       return 1
@@ -372,6 +396,7 @@ sync_agent_platform() {
     claude)    files=("${CLAUDE_FILES[@]}") ;;
     droid)     files=("${DROID_FILES[@]}") ;;
     universal) files=("${UNIVERSAL_FILES[@]}") ;;
+    pi)        files=("${PI_FILES[@]}") ;;
   esac
   
   # Create all required directories
@@ -630,7 +655,7 @@ When invoked via a command (e.g., `/os-change`, `/tk-queue`, `/tk-bootstrap`):
 
 ## Forbidden Actions
 
-- `tk start`, `tk close`, `tk add-note` (those belong to worker or /tk-done)
+- \`tk start\`, \`tk close\`, \`tk add-note\` (those belong to worker or /tk-done)
 - Editing code files (*.py, *.ts, *.js, *.go, etc.)
 - Editing config files (*.json, *.yaml, etc.) except AGENTS.md markers
 - Implementing features or writing application code
@@ -810,8 +835,8 @@ You are the **aggregator** for the multi-model code review pipeline. Your job is
 
 ## Your Exclusivity
 
-- **ONLY YOU** are allowed to create fix tickets (`tk create`).
-- **ONLY YOU** are allowed to add notes to the original ticket (`tk add-note`).
+- **ONLY YOU** are allowed to create fix tickets (\`tk create\`).
+- **ONLY YOU** are allowed to add notes to the original ticket (\`tk add-note\`).
 - Scouts are strictly forbidden from these actions.
 
 ## Your Workflow
@@ -884,6 +909,7 @@ You are a **read-only scout** in a multi-model code review pipeline.
 1. **FORBIDDEN**: You must **NEVER** call \`tk add-note\`, \`tk create\`, \`tk link\`, \`tk close\`, or \`tk start\`.
 2. **FORBIDDEN**: You must **NEVER** edit any files.
 3. **REQUIRED**: You must output your findings in exactly one structured envelope.
+
 
 ## Output Envelope
 
@@ -964,6 +990,18 @@ ensure_gitignore_worktrees() {
     else
       echo "$gitignore_entry already in .gitignore"
     fi
+  fi
+}
+
+check_pi_subagent_extension() {
+  local extension_dir="$HOME/.pi/agent/extensions/subagent"
+  if [[ ! -d "$extension_dir" ]]; then
+    echo "Warning: Pi 'subagent' extension not found at $extension_dir"
+    echo "To install it:"
+    echo "  1. Clone https://github.com/badlogic/pi-mono"
+    echo "  2. Copy/symlink 'packages/coding-agent/examples/extensions/subagent' to '$extension_dir'"
+    echo "  3. Restart 'pi'"
+    echo ""
   fi
 }
 
@@ -1081,18 +1119,69 @@ apply_agent_platform() {
       # Config is applied via settings.json, not embedded in agent files
       echo "  Note: Claude Code agents configured via settings.json"
       echo "  Agent files synced but model config not embedded"
+      echo "  - $target_dir/agents/os-tk-planner.md"
+      echo "  - $target_dir/agents/os-tk-worker.md"
+      echo "  - $target_dir/agents/os-tk-reviewer.md"
       ;;
     droid)
       # Factory/Droid uses droids/ dir with reasoningEffort in frontmatter
       # Config would need to update the frontmatter in droid files
       echo "  Note: Factory/Droid agents use frontmatter config"
       echo "  Agent files synced but model config not auto-updated"
+      echo "  - $target_dir/droids/os-tk-planner.md"
+      echo "  - $target_dir/droids/os-tk-worker.md"
+      echo "  - $target_dir/droids/os-tk-reviewer.md"
       ;;
     universal)
       # Universal format - agents are in agents/ dir
       echo "  Note: Universal agents synced, platform-agnostic format"
       ;;
+    pi)
+      mkdir -p "$target_dir/agents"
+      
+      # Best-effort model mapping
+      rebuild_agent_from_template "$target_dir/agents/os-tk-planner.md" "planner" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agents/os-tk-worker.md" "worker" "$worker_model" "$worker_temp" "$worker_reasoning"
+      
+      # Aggregators
+      rebuild_aggregator_from_template "$target_dir/agents/os-tk-reviewer-agg-fast.md" "fast" "$worker_model" "$worker_temp" "$worker_reasoning"
+      rebuild_aggregator_from_template "$target_dir/agents/os-tk-reviewer-agg-strong.md" "strong" "$agg_strong_model" "$agg_strong_temp" "$agg_strong_reasoning"
+      
+      # Reviewer (aggregator-strong)
+      rebuild_aggregator_from_template "$target_dir/agents/os-tk-reviewer.md" "strong" "$agg_strong_model" "$agg_strong_temp" "$agg_strong_reasoning"
+      
+      # Scouts (in agents/ dir for Pi)
+      # We need a Pi-specific version of rebuild_reviewer_scouts or adjust it
+      # For now, let's just use the same logic but adjust target_dir
+      PI_SCOUT_DIR="$target_dir/agents"
+      
+      # Manually call scout generation for Pi
+      local scouts_json
+      scouts_json=$(echo "$config" | jq -c '.reviewer.scouts // []')
+      if [[ "$scouts_json" != "[]" ]]; then
+        echo "  - Generating reviewer scouts for Pi..."
+        local count
+        count=$(echo "$scouts_json" | jq '. | length')
+        for ((i=0; i<count; i++)); do
+          local scout id model temp reasoning
+          scout=$(echo "$scouts_json" | jq -c ".[$i]")
+          id=$(echo "$scout" | jq -r '.id')
+          model=$(echo "$scout" | jq -r '.model')
+          temp=$(echo "$scout" | jq -r '.temperature // 0')
+          reasoning=$(echo "$scout" | jq -r '.reasoningEffort // "none"')
+          rebuild_scout_from_template "$PI_SCOUT_DIR/os-tk-reviewer-scout-${id}.md" "$id" "$model" "$temp" "$reasoning"
+          echo "    [ok] os-tk-reviewer-scout-${id}.md"
+        done
+      fi
+      
+      echo "  - $target_dir/agents/os-tk-planner.md (model: $planner_model)"
+      echo "  - $target_dir/agents/os-tk-worker.md (model: $worker_model)"
+      
+      echo "  Note: Models auto-mapped but may require manual adjustment in .pi/agents/*.md"
+      check_pi_subagent_extension
+      ;;
   esac
+
   echo ""
 }
 

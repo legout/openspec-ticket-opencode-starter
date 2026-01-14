@@ -12,6 +12,7 @@ The os-tk workflow supports multiple AI coding agent platforms, allowing teams t
 | **Claude Code** | `.claude/` | Anthropic's coding agent. Commands, agents, skills. |
 | **Factory/Droid** | `.factory/` | Factory AI droids with reasoning effort config. |
 | **Universal** | `.agent/` | Platform-agnostic format for other agents. |
+| **Pi** | `.pi/` | Pi coding agent. Requires 'subagent' extension. |
 
 ---
 
@@ -76,17 +77,17 @@ os-tk sync --agent all
 # Claude Code (.claude/)
 .claude/
   agents/
-    planner.md
-    worker.md
-    reviewer.md
+    os-tk-planner.md
+    os-tk-worker.md
+    os-tk-reviewer.md
   commands/
-    openspec/
-      proposal.md
-      ...
-    tk/
-      start.md
-      done.md
-      ...
+    os-breakdown.md
+    os-change.md
+    os-proposal.md
+    tk-bootstrap.md
+    tk-start.md
+    tk-done.md
+    ...
   skills/
     openspec/SKILL.md
     ticket/SKILL.md
@@ -95,10 +96,14 @@ os-tk sync --agent all
 # Factory/Droid (.factory/)
 .factory/
   droids/
-    planner.md
-    worker.md
-    reviewer.md
+    os-tk-planner.md
+    os-tk-worker.md
+    os-tk-reviewer.md
   commands/
+    os-breakdown.md
+    os-change.md
+    os-proposal.md
+    tk-bootstrap.md
     tk-start.md
     tk-done.md
     ...
@@ -110,9 +115,9 @@ os-tk sync --agent all
 # Universal (.agent/)
 .agent/
   agents/
-    planner.md
-    worker.md
-    reviewer.md
+    os-tk-planner.md
+    os-tk-worker.md
+    os-tk-reviewer.md
   commands/
     tk-start.md
     tk-done.md
@@ -121,26 +126,42 @@ os-tk sync --agent all
     openspec.md
     ticket.md
     os-tk-workflow.md
+
+# Pi (.pi/)
+.pi/
+  agents/
+    os-tk-planner.md
+    os-tk-worker.md
+    os-tk-reviewer.md
+  prompts/
+    tk-start.md
+    tk-done.md
+    ...
+  skills/
+    openspec/SKILL.md
+    ticket/SKILL.md
+    os-tk-workflow/SKILL.md
+
 ```
 
 ### Feature Comparison
 
 | Feature | OpenCode | Claude Code | Factory/Droid | Universal |
 |---------|----------|-------------|---------------|-----------|
-| **Slash commands** | `/tk-start` | `/tk start` | `/tk-start` | Varies |
+| **Slash commands** | `/tk-start` | `/tk-start` | `/tk-start` | Varies |
 | **Agent routing** | Via frontmatter | Via tools array | Via reasoningEffort | Manual |
 | **Model config** | In agent file | In settings.json | In droid frontmatter | Manual |
 | **Skills** | Directory-based | Directory-based | Directory-based | File-based |
-| **Subtasks** | Native | Native | Native | Manual |
+| **Subtasks** | Native | Native | Native | Manual | Via 'subagent' extension |
 
 ### Command Syntax Differences
 
 | Action | OpenCode | Claude Code |
 |--------|----------|-------------|
-| Start ticket | `/tk-start T-001` | `/tk start T-001` |
-| Close ticket | `/tk-done T-001` | `/tk done T-001` |
-| View queue | `/tk-queue` | `/tk queue` |
-| Create proposal | `/os-proposal foo` | `/openspec proposal foo` |
+| Start ticket | `/tk-start T-001` | `/tk-start T-001` |
+| Close ticket | `/tk-done T-001` | `/tk-done T-001` |
+| View queue | `/tk-queue` | `/tk-queue` |
+| Create proposal | `/os-proposal foo` | `/os-proposal foo` |
 
 ---
 
@@ -220,6 +241,15 @@ A platform-agnostic format for agents that don't have dedicated support.
 - No platform-specific frontmatter
 - Designed to be adapted to any agent system
 
+### Pi
+
+Uses Pi coding agent's native format with prompt templates and subagent extension.
+
+- Commands are prompt templates in `prompts/`
+- Supports subagents for orchestration via the global `subagent` extension
+- Ported skills in `skills/`
+- Best-effort model mapping from `.os-tk/config.json`
+
 ---
 
 ## Workflow Files
@@ -244,8 +274,8 @@ All platforms share the same `AGENTS.md` file, which provides agent-agnostic wor
 To add support for a new agent platform:
 
 1. **Create directory structure** under the platform's config directory
-2. **Port agents** from `.agent/agents/` adapting to platform format
-3. **Port commands** from `.agent/commands/` adapting syntax
+2. **Port agents** from `.agent/agents/` (e.g., `os-tk-planner.md`) adapting to platform format
+3. **Port commands** from `.agent/commands/` (e.g., `tk-start.md`) adapting syntax
 4. **Port skills** from `.agent/skills/` adapting format
 5. **Update `os-tk` script** with new file arrays and sync logic
 
