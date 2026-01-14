@@ -14,7 +14,7 @@ This repo is a template. Use `os-tk` to install the workflow into any project, g
 
 ```bash
 # 1. Install os-tk (one-time, global)
-curl -fsSL https://raw.githubusercontent.com/legout/openspec-ticket-opencode-starter/v0.3.2/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/legout/openspec-ticket-opencode-starter/v0.5.0/install.sh | bash
 
 # 2. Add ~/.local/bin to PATH (if not already)
 export PATH="$HOME/.local/bin:$PATH"
@@ -51,7 +51,7 @@ After installing OpenSpec, run `openspec init` in your project.
 Install from a specific release for reproducibility:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/legout/openspec-ticket-opencode-starter/v0.3.2/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/legout/openspec-ticket-opencode-starter/v0.5.0/install.sh | bash
 ```
 
 Replace `v0.2.0` with the desired version tag.
@@ -62,7 +62,7 @@ Download the script directly:
 
 ```bash
 mkdir -p ~/.local/bin
-curl -fsSL https://raw.githubusercontent.com/legout/openspec-ticket-opencode-starter/v0.3.2/os-tk -o ~/.local/bin/os-tk
+curl -fsSL https://raw.githubusercontent.com/legout/openspec-ticket-opencode-starter/v0.5.0/os-tk -o ~/.local/bin/os-tk
 chmod +x ~/.local/bin/os-tk
 ```
 
