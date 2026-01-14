@@ -2,11 +2,11 @@
 # os-tk — OpenSpec + Ticket workflow CLI
 #
 # Global tool installed to ~/.local/bin/os-tk
-# Per-project config at .os-tk/config.json
+# Per-project config at config.json
 #
 # Commands:
 #   os-tk init           # Initialize project: sync + apply + update AGENTS.md
-#   os-tk sync           # Download .opencode/** from templateRepo@templateRef
+#   os-tk sync           # Download opencode/** from templateRepo@templateRef
 #   os-tk apply          # Re-apply config to agents (no network, no AGENTS.md)
 #   os-tk version        # Show os-tk version and project templateRef
 #   os-tk --version      # Show os-tk version
@@ -22,8 +22,8 @@ VERSION="0.4.0"
 # =============================================================================
 # PATHS
 # =============================================================================
-CONFIG_DIR=".os-tk"
-CONFIG_FILE="$CONFIG_DIR/config.json"
+CONFIG_DIR="."
+CONFIG_FILE="config.json"
 OPENCODE_DIR=".opencode"
 AGENTS_FILE="AGENTS.md"
 
@@ -203,6 +203,12 @@ OPENCODE_FILES=(
   "agent/os-tk-reviewer.md"
   "agent/os-tk-reviewer-agg-fast.md"
   "agent/os-tk-reviewer-agg-strong.md"
+  "agent/os-tk-agent-spec.md"
+  "agent/os-tk-agent-design.md"
+  "agent/os-tk-agent-safety.md"
+  "agent/os-tk-agent-scout.md"
+  "agent/os-tk-agent-quality.md"
+  "agent/os-tk-agent-simplify.md"
   "command/os-breakdown.md"
   "command/os-change.md"
   "command/os-proposal.md"
@@ -225,6 +231,12 @@ CLAUDE_FILES=(
   "agents/os-tk-planner.md"
   "agents/os-tk-worker.md"
   "agents/os-tk-reviewer.md"
+  "agents/os-tk-agent-spec.md"
+  "agents/os-tk-agent-design.md"
+  "agents/os-tk-agent-safety.md"
+  "agents/os-tk-agent-scout.md"
+  "agents/os-tk-agent-quality.md"
+  "agents/os-tk-agent-simplify.md"
   "commands/os-breakdown.md"
   "commands/os-change.md"
   "commands/os-proposal.md"
@@ -241,10 +253,16 @@ CLAUDE_FILES=(
 )
 
 # Factory/Droid files
-DROID_FILES=(
+FACTORY_FILES=(
   "droids/os-tk-planner.md"
   "droids/os-tk-worker.md"
   "droids/os-tk-reviewer.md"
+  "droids/os-tk-agent-spec.md"
+  "droids/os-tk-agent-design.md"
+  "droids/os-tk-agent-safety.md"
+  "droids/os-tk-agent-scout.md"
+  "droids/os-tk-agent-quality.md"
+  "droids/os-tk-agent-simplify.md"
   "commands/os-breakdown.md"
   "commands/os-change.md"
   "commands/os-proposal.md"
@@ -260,26 +278,6 @@ DROID_FILES=(
   "skills/os-tk-workflow/SKILL.md"
 )
 
-# Universal .agent files
-UNIVERSAL_FILES=(
-  "agents/os-tk-planner.md"
-  "agents/os-tk-worker.md"
-  "agents/os-tk-reviewer.md"
-  "commands/os-breakdown.md"
-  "commands/os-change.md"
-  "commands/os-proposal.md"
-  "commands/tk-bootstrap.md"
-  "commands/tk-done.md"
-  "commands/tk-queue.md"
-  "commands/tk-refactor.md"
-  "commands/tk-review.md"
-  "commands/tk-run.md"
-  "commands/tk-start.md"
-  "skills/openspec.md"
-  "skills/ticket.md"
-  "skills/os-tk-workflow.md"
-)
-
 # Pi files
 PI_FILES=(
   "agents/os-tk-planner.md"
@@ -287,6 +285,12 @@ PI_FILES=(
   "agents/os-tk-reviewer.md"
   "agents/os-tk-reviewer-agg-fast.md"
   "agents/os-tk-reviewer-agg-strong.md"
+  "agents/os-tk-agent-spec.md"
+  "agents/os-tk-agent-design.md"
+  "agents/os-tk-agent-safety.md"
+  "agents/os-tk-agent-scout.md"
+  "agents/os-tk-agent-quality.md"
+  "agents/os-tk-agent-simplify.md"
   "prompts/os-breakdown.md"
   "prompts/os-change.md"
   "prompts/os-proposal.md"
@@ -311,7 +315,7 @@ parse_agents() {
   
   # Handle "all" keyword
   if [[ "$input" == "all" ]]; then
-    echo "opencode,claude,droid,universal,pi"
+    echo "opencode,claude,factory,pi"
     return
   fi
   
@@ -319,10 +323,10 @@ parse_agents() {
   local IFS=','
   for agent in $input; do
     case "$agent" in
-      opencode|claude|droid|universal|pi) ;;
+      opencode|claude|factory|pi) ;;
       *)
         echo "Error: Unknown agent platform: $agent" >&2
-        echo "Valid options: opencode, claude, droid, universal, pi, all" >&2
+        echo "Valid options: opencode, claude, factory, pi, all" >&2
         exit 1
         ;;
     esac
@@ -331,14 +335,13 @@ parse_agents() {
   echo "$input"
 }
 
-# Get target directory for an agent platform
+# Get target directory for an agent platform (installed in project)
 get_agent_dir() {
   local agent="$1"
   case "$agent" in
     opencode)  echo ".opencode" ;;
     claude)    echo ".claude" ;;
-    droid)     echo ".factory" ;;
-    universal) echo ".agent" ;;
+    factory)   echo ".factory" ;;
     pi)        echo ".pi" ;;
     *)
       echo "Error: Unknown agent: $agent" >&2
@@ -351,11 +354,10 @@ get_agent_dir() {
 get_template_dir() {
   local agent="$1"
   case "$agent" in
-    opencode)  echo ".opencode" ;;
-    claude)    echo ".claude" ;;
-    droid)     echo ".factory" ;;
-    universal) echo ".agent" ;;
-    pi)        echo ".pi" ;;
+    opencode)  echo "opencode" ;;
+    claude)    echo "claude" ;;
+    factory)   echo "factory" ;;
+    pi)        echo "pi" ;;
     *)
       echo "Error: Unknown agent: $agent" >&2
       return 1
@@ -369,8 +371,8 @@ get_agent_files() {
   case "$agent" in
     opencode)  echo "${OPENCODE_FILES[@]}" ;;
     claude)    echo "${CLAUDE_FILES[@]}" ;;
-    droid)     echo "${DROID_FILES[@]}" ;;
-    universal) echo "${UNIVERSAL_FILES[@]}" ;;
+    factory)   echo "${FACTORY_FILES[@]}" ;;
+    pi)        echo "${PI_FILES[@]}" ;;
     *)
       echo "Error: Unknown agent: $agent" >&2
       return 1
@@ -387,15 +389,14 @@ sync_agent_platform() {
   target_dir=$(get_agent_dir "$agent")
   template_dir=$(get_template_dir "$agent")
   
-  echo "Syncing $agent → $target_dir/"
+  echo "Syncing $agent → $target_dir/ (source: $template_dir/)"
   
   # Get file list based on agent
   local files
   case "$agent" in
     opencode)  files=("${OPENCODE_FILES[@]}") ;;
     claude)    files=("${CLAUDE_FILES[@]}") ;;
-    droid)     files=("${DROID_FILES[@]}") ;;
-    universal) files=("${UNIVERSAL_FILES[@]}") ;;
+    factory)   files=("${FACTORY_FILES[@]}") ;;
     pi)        files=("${PI_FILES[@]}") ;;
   esac
   
@@ -415,8 +416,14 @@ sync_agent_platform() {
     if curl -sSfL "$url" -o "$dest" 2>/dev/null; then
       echo "  [ok] $dest"
     else
-      echo "  [FAIL] $dest"
-      ((failed++)) || true
+      # Fallback to hidden directory for older template tags
+      local fallback_url="$base_url/.$template_dir/$file"
+      if curl -sSfL "$fallback_url" -o "$dest" 2>/dev/null; then
+         echo "  [ok] $dest (from fallback .$template_dir/)"
+      else
+        echo "  [FAIL] $dest"
+        ((failed++)) || true
+      fi
     fi
   done
   
@@ -516,11 +523,24 @@ This repo uses OpenSpec for spec-driven changes and tk for task execution tracki
 | `/tk-run [--all] [--max-cycles N]` | Autonomous loop: start → done → review → repeat |
 | `/tk-refactor` | Merge duplicates, clean up backlog (optional) |
 
+## Specialized Advisors (Advise-only)
+
+Call these agents manually to get expert guidance at any stage. They can research via the web but cannot edit files.
+
+| Agent | Expertise |
+|-------|-----------|
+| `@agent-spec` | Requirements, acceptance criteria, and edge cases |
+| `@agent-design` | Architecture, dependencies, and rollout risk |
+| `@agent-safety` | Security, privacy, and performance hotspots |
+| `@agent-scout` | Tech research, API usage, and reference patterns |
+| `@agent-quality` | Test strategy and verification checklists |
+| `@agent-simplify` | Complexity reduction and refactoring advice |
+
 ## Review Automation
 
 - `/tk-review` analyzes merge commits against OpenSpec specs
 - Creates linked fix tickets (non-blocking) for issues found
-- Configure via `reviewer` section in `.os-tk/config.json`
+- Configure via `reviewer` section in `config.json`
 - `/tk-run` enables fully autonomous operation (Ralph mode)
 
 ## Parallel Execution
@@ -528,7 +548,7 @@ This repo uses OpenSpec for spec-driven changes and tk for task execution tracki
 - **Safe mode** (`useWorktrees: true`): Parallel via git worktrees, isolated branches.
 - **Simple mode** (`useWorktrees: false`): Single working tree; parallel only if `unsafe.allowParallel: true`.
 
-Configure via `.os-tk/config.json`. Initialize with `os-tk init`.
+Configure via `config.json`. Initialize with `os-tk init`.
 <!-- OS-TK-END -->'
 
 update_agents_md() {
@@ -590,6 +610,10 @@ rebuild_agent_from_template() {
     write_perm="allow"
   elif [[ "$role" == "reviewer" ]]; then
     # Reviewer can run tk commands but not edit code files
+    edit_perm="deny"
+    write_perm="deny"
+  elif [[ "$role" == agent-* ]]; then
+    # Specialized advisors are read-only
     edit_perm="deny"
     write_perm="deny"
   fi
@@ -788,11 +812,144 @@ Review notes should follow this format:
 Created: T-XXX (linked)
 ```
 
-When review is complete:
+    When review is complete:
 - Summarize findings by category
 - List any fix tickets created
 - If no issues: "Review passed, no issues found"
 AGENT
+
+  elif [[ "$role" == "agent-spec" ]]; then
+    cat >> "$agent_file" << 'AGENT'
+
+You are the **Spec Companion**. Your role is to ensure requirements are crisp, complete, and unambiguous.
+
+## Core Responsibilities
+
+1. **Requirements Clarification**: Identify fuzzy requirements and suggest precise acceptance criteria.
+2. **Edge Case Discovery**: Spot missing scenarios, error conditions, and boundary cases.
+3. **User Story Refinement**: Improve user stories with clear "Definition of Done".
+4. **Consistency Check**: Ensure new requirements don't conflict with existing ones in `openspec/specs/`.
+
+## Your Advice Contract
+
+- **Advise Only**: You provide recommendations, structured feedback, and questions.
+- **Never Write**: You must NOT edit any files, create tickets, or run implementation commands.
+- **Web Research**: Use web search to research industry standards, common requirements for similar features, and accessibility best practices.
+
+## Suggested Next Steps
+After providing your advice, suggest which OpenSpec capability needs updating or which human clarification is required.
+AGENT
+
+  elif [[ "$role" == "agent-design" ]]; then
+    cat >> "$agent_file" << 'AGENT'
+
+You are the **Design & Risk Advisor**. Your role is to provide technical guidance on architecture, dependencies, and rollout strategies.
+
+## Core Responsibilities
+
+1. **Architecture Alignment**: Propose architectural patterns that match project conventions.
+2. **Dependency Analysis**: Identify hidden dependencies, sequencing issues, and potential blockers.
+3. **Rollout Strategy**: Advise on feature flags, migrations, and backward compatibility.
+4. **Risk Assessment**: Spot technical "footguns", rollout hazards, and sequencing risks.
+
+## Your Advice Contract
+
+- **Advise Only**: You provide technical rationale, tradeoffs, and proposed ADR-lite decisions.
+- **Never Write**: You must NOT edit any files, create tickets, or run implementation commands.
+- **Web Research**: Use web search to research library documentation, architectural patterns (ADRs), and version compatibility.
+
+## Suggested Next Steps
+Recommend a sequence for implementation tickets (e.g., "DB first, then API") or suggest a specific technical decision to be recorded.
+AGENT
+
+  elif [[ "$role" == "agent-safety" ]]; then
+    cat >> "$agent_file" << 'AGENT'
+
+You are the **Safety & Perf Reviewer**. Your role is to threat-model the change and identify performance bottlenecks.
+
+## Core Responsibilities
+
+1. **Security Review**: Identify SQL injection, XSS, hardcoded secrets, and authz/authn gaps.
+2. **Privacy Audit**: Spot PII exposure, logging of sensitive data, and data retention issues.
+3. **Performance Analysis**: Identify N+1 queries, unbounded loops, and expensive operations.
+4. **Cost Awareness**: Spot "cost footguns" (e.g., excessive API calls, large cloud resource needs).
+
+## Your Advice Contract
+
+- **Advise Only**: You provide a risk register, security/perf mitigations, and explicit acceptance criteria for safety.
+- **Never Write**: You must NOT edit any files, create tickets, or run implementation commands.
+- **Web Research**: Use web search to research CVEs, security best practices (OWASP), and performance benchmarks for libraries.
+
+## Suggested Next Steps
+Suggest specific "Safety Scenarios" to add to the OpenSpec proposal or performance limits to enforce in tests.
+AGENT
+
+  elif [[ "$role" == "agent-scout" ]]; then
+    cat >> "$agent_file" << 'AGENT'
+
+You are the **Implementation Scout**. Your role is to research APIs, libraries, and best practices to accelerate implementation.
+
+## Core Responsibilities
+
+1. **Tech Research**: Find the best way to use a library or API based on latest documentation.
+2. **Pattern Matching**: Identify common integration patterns and known pitfalls for the tech stack.
+3. **Reference Snippets**: Provide minimal, idiomatic code examples (advisory only) for the worker to adapt.
+4. **Version Scouting**: Check for deprecations, breaking changes, or better alternatives in newer versions.
+
+## Your Advice Contract
+
+- **Advise Only**: You provide research summaries, reference links, and implementation "recipes".
+- **Never Write**: You must NOT edit any files, create tickets, or run implementation commands.
+- **Web Research**: Use web search to research API documentation, GitHub examples, and StackOverflow solutions.
+
+## Suggested Next Steps
+Provide a list of "recipes" or documentation links that the worker should follow during implementation.
+AGENT
+
+  elif [[ "$role" == "agent-quality" ]]; then
+    cat >> "$agent_file" << 'AGENT'
+
+You are the **Quality Strategist**. Your role is to design a comprehensive testing and verification plan.
+
+## Core Responsibilities
+
+1. **Test Matrix**: Advise on what to test at unit, integration, and E2E levels.
+2. **Scenario Coverage**: Ensure all OpenSpec scenarios have corresponding test ideas.
+3. **Verification Checklist**: Provide a "manual verification" checklist for things hard to automate.
+4. **Observability**: Suggest logging, tracing, and metrics needed to verify the feature in production.
+
+## Your Advice Contract
+
+- **Advise Only**: You provide a test strategy, coverage gaps, and explicit "How to Verify" checklists.
+- **Never Write**: You must NOT edit any files, create tickets, or run implementation commands.
+- **Web Research**: Use web search to research testing patterns, mock strategies, and observability tools.
+
+## Suggested Next Steps
+Suggest specific test tickets to be added to the epic or acceptance criteria to be clarified.
+AGENT
+
+  elif [[ "$role" == "agent-simplify" ]]; then
+    cat >> "$agent_file" << 'AGENT'
+
+You are the **Maintainability Coach**. Your role is to reduce complexity and ensure long-term code health.
+
+## Core Responsibilities
+
+1. **Complexity Reduction**: Identify over-engineering, deep nesting, and hard-to-read logic.
+2. **DRY/AHA Balance**: Spot harmful duplication vs. premature abstraction.
+3. **Idiomatic Review**: Ensure code follows project-specific and language-specific best practices.
+4. **Refactoring Advice**: Propose safe, incremental refactoring steps to improve existing code.
+
+## Your Advice Contract
+
+- **Advise Only**: You provide complexity hotspots, "clean code" suggestions, and refactoring rationales.
+- **Never Write**: You must NOT edit any files, create tickets, or run implementation commands.
+- **Web Research**: Use web search to research clean code principles, refactoring patterns, and language-specific idioms.
+
+## Suggested Next Steps
+Suggest a "Cleanup" or "Refactor" ticket to follow the main implementation or specific files that need attention.
+AGENT
+
 
   else
     echo "Error: Unknown role: $role"
@@ -1109,6 +1266,14 @@ apply_agent_platform() {
       # Scouts
       rebuild_reviewer_scouts "$target_dir" "$config"
       
+      # Advisors
+      rebuild_agent_from_template "$target_dir/agent/os-tk-agent-spec.md" "agent-spec" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agent/os-tk-agent-design.md" "agent-design" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agent/os-tk-agent-safety.md" "agent-safety" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agent/os-tk-agent-scout.md" "agent-scout" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agent/os-tk-agent-quality.md" "agent-quality" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agent/os-tk-agent-simplify.md" "agent-simplify" "$planner_model" "$planner_temp" "$planner_reasoning"
+      
       echo "  - $target_dir/agent/os-tk-planner.md (model: $planner_model)"
       echo "  - $target_dir/agent/os-tk-worker.md (model: $worker_model)"
       echo "  - $target_dir/agent/os-tk-reviewer-agg-fast.md (model: $worker_model)"
@@ -1116,25 +1281,53 @@ apply_agent_platform() {
       ;;
     claude)
       # Claude Code uses different structure - agents are in agents/ dir
-      # Config is applied via settings.json, not embedded in agent files
-      echo "  Note: Claude Code agents configured via settings.json"
-      echo "  Agent files synced but model config not embedded"
+      mkdir -p "$target_dir/agents"
+      rebuild_agent_from_template "$target_dir/agents/os-tk-planner.md" "planner" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agents/os-tk-worker.md" "worker" "$worker_model" "$worker_temp" "$worker_reasoning"
+      rebuild_agent_from_template "$target_dir/agents/os-tk-reviewer.md" "reviewer" "$reviewer_model" "$reviewer_temp" "$reviewer_reasoning"
+      
+      # Advisors
+      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-spec.md" "agent-spec" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-design.md" "agent-design" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-safety.md" "agent-safety" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-scout.md" "agent-scout" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-quality.md" "agent-quality" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-simplify.md" "agent-simplify" "$planner_model" "$planner_temp" "$planner_reasoning"
+      
       echo "  - $target_dir/agents/os-tk-planner.md"
       echo "  - $target_dir/agents/os-tk-worker.md"
       echo "  - $target_dir/agents/os-tk-reviewer.md"
+      echo "  - $target_dir/agents/os-tk-agent-spec.md"
+      echo "  - $target_dir/agents/os-tk-agent-design.md"
+      echo "  - $target_dir/agents/os-tk-agent-safety.md"
+      echo "  - $target_dir/agents/os-tk-agent-scout.md"
+      echo "  - $target_dir/agents/os-tk-agent-quality.md"
+      echo "  - $target_dir/agents/os-tk-agent-simplify.md"
       ;;
-    droid)
-      # Factory/Droid uses droids/ dir with reasoningEffort in frontmatter
-      # Config would need to update the frontmatter in droid files
-      echo "  Note: Factory/Droid agents use frontmatter config"
-      echo "  Agent files synced but model config not auto-updated"
+    factory)
+      # Factory uses droids/ dir with reasoningEffort in frontmatter
+      mkdir -p "$target_dir/droids"
+      rebuild_agent_from_template "$target_dir/droids/os-tk-planner.md" "planner" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/droids/os-tk-worker.md" "worker" "$worker_model" "$worker_temp" "$worker_reasoning"
+      rebuild_agent_from_template "$target_dir/droids/os-tk-reviewer.md" "reviewer" "$reviewer_model" "$reviewer_temp" "$reviewer_reasoning"
+      
+      # Advisors
+      rebuild_agent_from_template "$target_dir/droids/os-tk-agent-spec.md" "agent-spec" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/droids/os-tk-agent-design.md" "agent-design" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/droids/os-tk-agent-safety.md" "agent-safety" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/droids/os-tk-agent-scout.md" "agent-scout" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/droids/os-tk-agent-quality.md" "agent-quality" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/droids/os-tk-agent-simplify.md" "agent-simplify" "$planner_model" "$planner_temp" "$planner_reasoning"
+      
       echo "  - $target_dir/droids/os-tk-planner.md"
       echo "  - $target_dir/droids/os-tk-worker.md"
       echo "  - $target_dir/droids/os-tk-reviewer.md"
-      ;;
-    universal)
-      # Universal format - agents are in agents/ dir
-      echo "  Note: Universal agents synced, platform-agnostic format"
+      echo "  - $target_dir/droids/os-tk-agent-spec.md"
+      echo "  - $target_dir/droids/os-tk-agent-design.md"
+      echo "  - $target_dir/droids/os-tk-agent-safety.md"
+      echo "  - $target_dir/droids/os-tk-agent-scout.md"
+      echo "  - $target_dir/droids/os-tk-agent-quality.md"
+      echo "  - $target_dir/droids/os-tk-agent-simplify.md"
       ;;
     pi)
       mkdir -p "$target_dir/agents"
@@ -1149,6 +1342,14 @@ apply_agent_platform() {
       
       # Reviewer (aggregator-strong)
       rebuild_aggregator_from_template "$target_dir/agents/os-tk-reviewer.md" "strong" "$agg_strong_model" "$agg_strong_temp" "$agg_strong_reasoning"
+      
+      # Advisors for Pi
+      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-spec.md" "agent-spec" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-design.md" "agent-design" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-safety.md" "agent-safety" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-scout.md" "agent-scout" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-quality.md" "agent-quality" "$planner_model" "$planner_temp" "$planner_reasoning"
+      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-simplify.md" "agent-simplify" "$planner_model" "$planner_temp" "$planner_reasoning"
       
       # Scouts (in agents/ dir for Pi)
       # We need a Pi-specific version of rebuild_reviewer_scouts or adjust it
@@ -1222,7 +1423,6 @@ cmd_init() {
   
   # Create config if missing
   if [[ ! -f "$CONFIG_FILE" ]]; then
-    mkdir -p "$CONFIG_DIR"
     default_config "$VERSION" "$agents" > "$CONFIG_FILE"
     echo "Created default config: $CONFIG_FILE"
   else
@@ -1262,11 +1462,11 @@ cmd_init() {
   echo "Selected agents: $agents"
   echo ""
   echo "Next steps:"
-  echo "  1. Review and edit .os-tk/config.json to customize models/settings"
+  echo "  1. Review and edit config.json to customize models/settings"
   echo "  2. Run: os-tk apply  (to regenerate agents after config changes)"
   
   # Build commit message based on selected agents
-  local dirs=".os-tk AGENTS.md .gitignore"
+  local dirs="config.json AGENTS.md .gitignore"
   local IFS=','
   for agent in $agents; do
     local dir
@@ -1315,8 +1515,8 @@ Commands:
 Agent Platforms:
   opencode                OpenCode format (.opencode/) - default
   claude                  Claude Code format (.claude/)
-  droid                   Factory/Droid format (.factory/)
-  universal               Universal format (.agent/)
+  factory                 Factory/Droid format (.factory/)
+  pi                      Pi coding agent (.pi/)
   all                     All platforms
 
 Options:
@@ -1327,7 +1527,7 @@ Options:
   --help                  Show this help
 
 Config:
-  Per-project config is stored in: .os-tk/config.json
+  Per-project config is stored in: config.json
   Set templateRef to a tag (e.g., "v1.0.0") or "latest" for newest release.
 
 Examples:
@@ -1335,7 +1535,7 @@ Examples:
   os-tk init --agent opencode,claude      # Initialize for OpenCode + Claude Code
   os-tk init --agent all                  # Initialize for all platforms
   os-tk init --simple --agent claude      # Claude Code without worktrees
-  os-tk sync --agent opencode,droid       # Update OpenCode + Factory files
+  os-tk sync --agent opencode,factory     # Update OpenCode + Factory files
   os-tk apply                             # Regenerate agents (uses config)
   os-tk apply --agent claude              # Regenerate Claude agents only
 

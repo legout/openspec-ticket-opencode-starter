@@ -349,4 +349,4 @@ A: Yes, set `fileAwareDeps.enabled: false` in `.os-tk/config.json`. The system w
 
 - [Test Plan](./tests/file-aware-dependencies.md) - Comprehensive test scenarios
 - [Design Doc](../openspec/changes/add-file-aware-deps/design.md) - Technical design decisions
-- [Agent Contract](../.opencode/agent/os-tk-orchestrator.md) - Orchestrator behavior
+- [Agent Contract](../opencode/agent/os-tk-orchestrator.md) - Orchestrator behavior

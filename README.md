@@ -26,7 +26,7 @@ os-tk init --agent opencode,claude      # OpenCode + Claude Code
 os-tk init --agent all                  # All platforms
 
 # 4. Commit the workflow files
-git add .os-tk .opencode AGENTS.md .gitignore  # adjust based on selected agents
+git add config.json opencode AGENTS.md .gitignore  # adjust based on selected agents
 git commit -m "Add OpenSpec + ticket workflow"
 ```
 
@@ -100,15 +100,14 @@ set -gx PATH $HOME/.local/bin $PATH
 |----------|-----------|-------------|
 | `opencode` | `.opencode/` | OpenCode format (default) |
 | `claude` | `.claude/` | Claude Code format |
-| `droid` | `.factory/` | Factory/Droid format |
-| `universal` | `.agent/` | Platform-agnostic format |
+| `factory` | `.factory/` | Factory/Droid format |
 | `pi` | `.pi/` | Pi coding agent (requires subagent extension) |
 | `all` | All above | Install all platforms |
 
 Examples:
 ```bash
 os-tk init --agent opencode,claude    # Multiple platforms
-os-tk sync --agent droid              # Sync specific platform
+os-tk sync --agent factory             # Sync specific platform
 os-tk apply --agent all               # Apply config to all
 ```
 
@@ -116,7 +115,7 @@ os-tk apply --agent all               # Apply config to all
 
 ## Configuration
 
-After running `os-tk init`, configuration is stored in `.os-tk/config.json`.
+After running `os-tk init`, configuration is stored in `config.json`.
 
 **Note:** The example below shows the full OpenCode config. If you initialize without OpenCode, the `reviewer` section will be smaller and omit multi-model scouting fields.
 
@@ -180,7 +179,7 @@ See [docs/configuration.md](docs/configuration.md) for complete reference.
 
 To update to a newer version:
 
-1. Edit `.os-tk/config.json` and change `templateRef` to the new tag (or `latest`)
+1. Edit `config.json` and change `templateRef` to the new tag (or `latest`)
 2. Run `os-tk sync` to download updated files
 3. Commit the changes
 
@@ -191,8 +190,7 @@ To update to a newer version:
 Running `os-tk init` creates/updates these files in your project:
 
 ```
-.os-tk/
-  config.json              # Project config (commit this)
+config.json              # Project config (commit this)
 
 # OpenCode (--agent opencode, default)
 .opencode/
@@ -221,17 +219,11 @@ Running `os-tk init` creates/updates these files in your project:
   commands/os-breakdown.md, os-change.md, os-proposal.md, tk-bootstrap.md, ...
   skills/openspec/, ticket/, os-tk-workflow/
 
-# Factory/Droid (--agent droid)
+# Factory/Droid (--agent factory)
 .factory/
   droids/os-tk-planner.md, os-tk-worker.md, os-tk-reviewer.md
   commands/os-breakdown.md, os-change.md, os-proposal.md, tk-bootstrap.md, ...
   skills/openspec/, ticket/, os-tk-workflow/
-
-# Universal (--agent universal)
-.agent/
-  agents/os-tk-planner.md, os-tk-worker.md, os-tk-reviewer.md
-  commands/os-breakdown.md, os-change.md, os-proposal.md, tk-bootstrap.md, ...
-  skills/openspec.md, ticket.md, os-tk-workflow.md
 
 AGENTS.md                  # Agent-agnostic workflow rules (all platforms)
 ```

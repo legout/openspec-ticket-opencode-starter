@@ -27,11 +27,24 @@ This repo uses OpenSpec for spec-driven changes and tk for task execution tracki
 | `/tk-run [--all] [--max-cycles N]` | Autonomous loop: start → done → review → repeat |
 | `/tk-refactor` | Merge duplicates, clean up backlog (optional) |
 
+## Specialized Advisors (Advise-only)
+
+Call these agents manually to get expert guidance at any stage. They can research via the web but cannot edit files.
+
+| Agent | Expertise |
+|-------|-----------|
+| `@agent-spec` | Requirements, acceptance criteria, and edge cases |
+| `@agent-design` | Architecture, dependencies, and rollout risk |
+| `@agent-safety` | Security, privacy, and performance hotspots |
+| `@agent-scout` | Tech research, API usage, and reference patterns |
+| `@agent-quality` | Test strategy and verification checklists |
+| `@agent-simplify` | Complexity reduction and refactoring advice |
+
 ## Review Automation
 
 - `/tk-review` analyzes merge commits against OpenSpec specs
 - Creates linked fix tickets (non-blocking) for issues found
-- Configure via `reviewer` section in `.os-tk/config.json`
+- Configure via `reviewer` section in `config.json`
 - `/tk-run` enables fully autonomous operation (Ralph mode)
 
 ## Parallel Execution
@@ -39,5 +52,5 @@ This repo uses OpenSpec for spec-driven changes and tk for task execution tracki
 - **Safe mode** (`useWorktrees: true`): Parallel via git worktrees, isolated branches.
 - **Simple mode** (`useWorktrees: false`): Single working tree; parallel only if `unsafe.allowParallel: true`.
 
-Configure via `.os-tk/config.json`. Initialize with `os-tk init`.
+Configure via `config.json`. Initialize with `os-tk init`.
 <!-- OS-TK-END -->

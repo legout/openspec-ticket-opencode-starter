@@ -12,4 +12,4 @@
 # Refactoring plans (internal docs, not shipped)
 REFACTORING_PLAN*.md
 openspec/
-.opencode/command/openspec-*.md
+opencode/command/openspec-*.md

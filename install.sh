@@ -4,7 +4,7 @@
 #
 # Installs:
 #   - os-tk binary to ~/.local/bin/os-tk
-#   - .os-tk/config.json in current directory (project root)
+#   - config.json in current directory (project root)
 #
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/legout/openspec-ticket-opencode-starter/v0.1.0/install.sh | bash
@@ -17,15 +17,14 @@ set -euo pipefail
 # =============================================================================
 # VERSION (must match os-tk VERSION)
 # =============================================================================
-VERSION="0.3.2"
+VERSION="0.4.0"
 
 # =============================================================================
 # CONFIG
 # =============================================================================
 REPO="legout/openspec-ticket-opencode-starter"
 INSTALL_DIR="$HOME/.local/bin"
-CONFIG_DIR=".os-tk"
-CONFIG_FILE="$CONFIG_DIR/config.json"
+CONFIG_FILE="config.json"
 
 # Determine the ref we're installing from (embedded at release time, or detect from URL)
 # When invoked via curl|bash from a tag URL, the VERSION above should match
@@ -100,7 +99,7 @@ main() {
   echo "    os-tk init"
   echo ""
   echo " 2. Commit the workflow files:"
-  echo "    git add .os-tk .opencode AGENTS.md .gitignore"
+  echo "    git add config.json .opencode AGENTS.md .gitignore"
   echo "    git commit -m 'Add OpenSpec + ticket workflow'"
   echo ""
   echo "=============================================================================="

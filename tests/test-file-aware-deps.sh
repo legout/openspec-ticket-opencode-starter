@@ -41,7 +41,7 @@ run_test() {
 
 # Test 1: Check that /tk-queue command file exists
 echo "=== Test Suite 1: Command Files ==="
-if [ -f ".opencode/command/tk-queue.md" ]; then
+if [ -f "opencode/command/tk-queue.md" ]; then
     echo -e "${GREEN}✓${NC} tk-queue.md exists"
 else
     echo -e "${RED}✗${NC} tk-queue.md missing"
@@ -51,14 +51,14 @@ fi
 # Test 2: Check agent reference is correct
 echo ""
 echo "=== Test Suite 2: Agent References ==="
-if grep -q "agent: os-tk-orchestrator" ".opencode/command/tk-queue.md"; then
+if grep -q "agent: os-tk-orchestrator" "opencode/command/tk-queue.md"; then
     echo -e "${GREEN}✓${NC} tk-queue uses os-tk-orchestrator agent"
 else
     echo -e "${RED}✗${NC} tk-queue agent reference incorrect"
     fail_count=$((fail_count + 1))
 fi
 
-if grep -q "agent: os-tk-orchestrator" ".opencode/command/tk-bootstrap.md"; then
+if grep -q "agent: os-tk-orchestrator" "opencode/command/tk-bootstrap.md"; then
     echo -e "${GREEN}✓${NC} tk-bootstrap uses os-tk-orchestrator agent"
 else
     echo -e "${RED}✗${NC} tk-bootstrap agent reference incorrect"
@@ -68,21 +68,21 @@ fi
 # Test 3: Check flag parsing documentation
 echo ""
 echo "=== Test Suite 3: Flag Parsing ==="
-if grep -q "\-\-next" ".opencode/command/tk-queue.md"; then
+if grep -q "\-\-next" "opencode/command/tk-queue.md"; then
     echo -e "${GREEN}✓${NC} --next flag documented"
 else
     echo -e "${RED}✗${NC} --next flag not documented"
     fail_count=$((fail_count + 1))
 fi
 
-if grep -q "\-\-all" ".opencode/command/tk-queue.md"; then
+if grep -q "\-\-all" "opencode/command/tk-queue.md"; then
     echo -e "${GREEN}✓${NC} --all flag documented"
 else
     echo -e "${RED}✗${NC} --all flag not documented"
     fail_count=$((fail_count + 1))
 fi
 
-if grep -q "\-\-change" ".opencode/command/tk-queue.md"; then
+if grep -q "\-\-change" "opencode/command/tk-queue.md"; then
     echo -e "${GREEN}✓${NC} --change flag documented"
 else
     echo -e "${RED}✗${NC} --change flag not documented"
@@ -92,14 +92,14 @@ fi
 # Test 4: Check overlap detection steps
 echo ""
 echo "=== Test Suite 4: Overlap Detection ==="
-if grep -q "File-overlap detection" ".opencode/command/tk-queue.md"; then
+if grep -q "File-overlap detection" "opencode/command/tk-queue.md"; then
     echo -e "${GREEN}✓${NC} Overlap detection documented"
 else
     echo -e "${RED}✗${NC} Overlap detection not documented"
     fail_count=$((fail_count + 1))
 fi
 
-if grep -q "tk dep" ".opencode/command/tk-queue.md"; then
+if grep -q "tk dep" "opencode/command/tk-queue.md"; then
     echo -e "${GREEN}✓${NC} tk dep usage documented"
 else
     echo -e "${RED}✗${NC} tk dep usage not documented"
@@ -109,14 +109,14 @@ fi
 # Test 5: Check conflict check for --next
 echo ""
 echo "=== Test Suite 5: Conflict Detection (--next) ==="
-if grep -q "Check if recommended ticket's files overlap" ".opencode/command/tk-queue.md"; then
+if grep -q "Check if recommended ticket's files overlap" "opencode/command/tk-queue.md"; then
     echo -e "${GREEN}✓${NC} --next conflict check documented"
 else
     echo -e "${RED}✗${NC} --next conflict check not documented"
     fail_count=$((fail_count + 1))
 fi
 
-if grep -q "Skipping.*modifies.*already modified" ".opencode/command/tk-queue.md"; then
+if grep -q "Skipping.*modifies.*already modified" "opencode/command/tk-queue.md"; then
     echo -e "${GREEN}✓${NC} Conflict warning format documented"
 else
     echo -e "${RED}✗${NC} Conflict warning format not documented"
@@ -126,14 +126,14 @@ fi
 # Test 6: Check file prediction in bootstrap
 echo ""
 echo "=== Test Suite 6: File Predictions ==="
-if grep -q "files-modify" ".opencode/command/tk-bootstrap.md"; then
+if grep -q "files-modify" "opencode/command/tk-bootstrap.md"; then
     echo -e "${GREEN}✓${NC} files-modify documented in bootstrap"
 else
     echo -e "${RED}✗${NC} files-modify not documented in bootstrap"
     fail_count=$((fail_count + 1))
 fi
 
-if grep -q "files-create" ".opencode/command/tk-bootstrap.md"; then
+if grep -q "files-create" "opencode/command/tk-bootstrap.md"; then
     echo -e "${GREEN}✓${NC} files-create documented in bootstrap"
 else
     echo -e "${RED}✗${NC} files-create not documented in bootstrap"
@@ -191,7 +191,7 @@ fi
 # Test 10: Check for old agent references
 echo ""
 echo "=== Test Suite 10: Migration Cleanup ==="
-if grep -r "os-tk-bootstrapper" .opencode/ 2>/dev/null; then
+if grep -r "os-tk-bootstrapper" opencode/ 2>/dev/null; then
     echo -e "${RED}✗${NC} Old 'os-tk-bootstrapper' references still exist"
     fail_count=$((fail_count + 1))
 else

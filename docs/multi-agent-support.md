@@ -11,7 +11,6 @@ The os-tk workflow supports multiple AI coding agent platforms, allowing teams t
 | **OpenCode** | `.opencode/` | Canonical format. Slash commands, agents, skills. |
 | **Claude Code** | `.claude/` | Anthropic's coding agent. Commands, agents, skills. |
 | **Factory/Droid** | `.factory/` | Factory AI droids with reasoning effort config. |
-| **Universal** | `.agent/` | Platform-agnostic format for other agents. |
 | **Pi** | `.pi/` | Pi coding agent. Requires 'subagent' extension. |
 
 ---
@@ -40,23 +39,11 @@ os-tk init --agent opencode,claude
 os-tk init --agent all
 ```
 
-### Updating an Existing Project
-
-To add platforms to an existing project:
-
-```bash
-# Add Claude Code support
-os-tk sync --agent claude
-
-# Add all missing platforms
-os-tk sync --agent all
-```
-
 ---
 
 ## Platform Comparison
 
-### Directory Structure
+### Directory Structure (Installed)
 
 ```
 # OpenCode (.opencode/)
@@ -65,6 +52,12 @@ os-tk sync --agent all
     os-tk-planner.md
     os-tk-worker.md
     os-tk-reviewer.md
+    os-tk-agent-spec.md
+    os-tk-agent-design.md
+    os-tk-agent-safety.md
+    os-tk-agent-scout.md
+    os-tk-agent-quality.md
+    os-tk-agent-simplify.md
   command/
     tk-start.md
     tk-done.md
@@ -80,6 +73,12 @@ os-tk sync --agent all
     os-tk-planner.md
     os-tk-worker.md
     os-tk-reviewer.md
+    os-tk-agent-spec.md
+    os-tk-agent-design.md
+    os-tk-agent-safety.md
+    os-tk-agent-scout.md
+    os-tk-agent-quality.md
+    os-tk-agent-simplify.md
   commands/
     os-breakdown.md
     os-change.md
@@ -99,6 +98,12 @@ os-tk sync --agent all
     os-tk-planner.md
     os-tk-worker.md
     os-tk-reviewer.md
+    os-tk-agent-spec.md
+    os-tk-agent-design.md
+    os-tk-agent-safety.md
+    os-tk-agent-scout.md
+    os-tk-agent-quality.md
+    os-tk-agent-simplify.md
   commands/
     os-breakdown.md
     os-change.md
@@ -112,27 +117,18 @@ os-tk sync --agent all
     ticket/SKILL.md
     os-tk-workflow/SKILL.md
 
-# Universal (.agent/)
-.agent/
-  agents/
-    os-tk-planner.md
-    os-tk-worker.md
-    os-tk-reviewer.md
-  commands/
-    tk-start.md
-    tk-done.md
-    ...
-  skills/
-    openspec.md
-    ticket.md
-    os-tk-workflow.md
-
 # Pi (.pi/)
 .pi/
   agents/
     os-tk-planner.md
     os-tk-worker.md
     os-tk-reviewer.md
+    os-tk-agent-spec.md
+    os-tk-agent-design.md
+    os-tk-agent-safety.md
+    os-tk-agent-scout.md
+    os-tk-agent-quality.md
+    os-tk-agent-simplify.md
   prompts/
     tk-start.md
     tk-done.md
@@ -146,22 +142,13 @@ os-tk sync --agent all
 
 ### Feature Comparison
 
-| Feature | OpenCode | Claude Code | Factory/Droid | Universal |
-|---------|----------|-------------|---------------|-----------|
-| **Slash commands** | `/tk-start` | `/tk-start` | `/tk-start` | Varies |
-| **Agent routing** | Via frontmatter | Via tools array | Via reasoningEffort | Manual |
-| **Model config** | In agent file | In settings.json | In droid frontmatter | Manual |
-| **Skills** | Directory-based | Directory-based | Directory-based | File-based |
-| **Subtasks** | Native | Native | Native | Manual | Via 'subagent' extension |
-
-### Command Syntax Differences
-
-| Action | OpenCode | Claude Code |
-|--------|----------|-------------|
-| Start ticket | `/tk-start T-001` | `/tk-start T-001` |
-| Close ticket | `/tk-done T-001` | `/tk-done T-001` |
-| View queue | `/tk-queue` | `/tk-queue` |
-| Create proposal | `/os-proposal foo` | `/os-proposal foo` |
+| Feature | OpenCode | Claude Code | Factory/Droid |
+|---------|----------|-------------|---------------|
+| **Slash commands** | `/tk-start` | `/tk-start` | `/tk-start` |
+| **Agent routing** | Via frontmatter | Via tools array | Via reasoningEffort |
+| **Model config** | In agent file | In settings.json | In droid frontmatter |
+| **Skills** | Directory-based | Directory-based | Directory-based |
+| **Subtasks** | Native | Native | Native |
 
 ---
 
@@ -169,7 +156,7 @@ os-tk sync --agent all
 
 ### Stored Agent Selection
 
-When you run `os-tk init --agent opencode,claude`, the selection is saved in `.os-tk/config.json`:
+When you run `os-tk init --agent opencode,claude`, the selection is saved in `config.json`:
 
 ```json
 {
@@ -202,7 +189,6 @@ Model and multi-model review settings in `config.json` apply to **OpenCode only*
 For other platforms:
 - **Claude Code**: Configure models via Claude Code settings; review is single-agent.
 - **Factory/Droid**: Edit droid frontmatter directly; review is single-agent.
-- **Universal**: Platform-specific configuration; review is single-agent.
 
 ---
 
@@ -233,14 +219,6 @@ Uses Factory's droid format with `reasoningEffort` in frontmatter.
 - Droids have `reasoningEffort` field (low/medium/high)
 - Tool categories: `read-only`, `edit`, `bash`
 
-### Universal
-
-A platform-agnostic format for agents that don't have dedicated support.
-
-- Simpler structure (skills as single files)
-- No platform-specific frontmatter
-- Designed to be adapted to any agent system
-
 ### Pi
 
 Uses Pi coding agent's native format with prompt templates and subagent extension.
@@ -248,7 +226,7 @@ Uses Pi coding agent's native format with prompt templates and subagent extensio
 - Commands are prompt templates in `prompts/`
 - Supports subagents for orchestration via the global `subagent` extension
 - Ported skills in `skills/`
-- Best-effort model mapping from `.os-tk/config.json`
+- Best-effort model mapping from `config.json`
 
 ---
 
@@ -273,13 +251,14 @@ All platforms share the same `AGENTS.md` file, which provides agent-agnostic wor
 
 To add support for a new agent platform:
 
-1. **Create directory structure** under the platform's config directory
-2. **Port agents** from `.agent/agents/` (e.g., `os-tk-planner.md`) adapting to platform format
-3. **Port commands** from `.agent/commands/` (e.g., `tk-start.md`) adapting syntax
-4. **Port skills** from `.agent/skills/` adapting format
-5. **Update `os-tk` script** with new file arrays and sync logic
+1. **Create directory structure** in the template root (non-hidden, e.g., `new-agent/`)
+2. **Port agents** from `opencode/agent/` (e.g., `os-tk-planner.md`) adapting to platform format
+3. **Port commands** from `opencode/command/` (e.g., `tk-start.md`) adapting syntax
+4. **Port skills** from `opencode/skill/` adapting format
+5. **Update `os-tk` script** with new file arrays, target dir (hidden), and source dir (visible).
 
 Contributions welcome! See [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
+
 
 ---
 
