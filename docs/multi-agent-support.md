@@ -161,28 +161,27 @@ When you run `os-tk init --agent opencode,claude`, the selection is saved in `.o
 
 Subsequent `os-tk sync` and `os-tk apply` commands will use this stored value unless overridden with `--agent`.
 
-### Model Configuration
+### Model & Review Configuration
 
-Model settings in `config.json` apply to **OpenCode only**:
+Model and multi-model review settings in `config.json` apply to **OpenCode only**:
 
 ```json
 {
   "planner": {
     "model": "openai/gpt-5.2",
-    "reasoningEffort": "high",
-    "temperature": 0
+    "reasoningEffort": "high"
   },
-  "worker": {
-    "model": "zai-coding-plan/glm-4.7",
-    "temperature": 0.2
+  "reviewer": {
+    "scouts": [...],
+    "adaptive": { "enabled": true }
   }
 }
 ```
 
 For other platforms:
-- **Claude Code**: Configure models via Claude Code settings
-- **Factory/Droid**: Edit droid frontmatter directly
-- **Universal**: Platform-specific configuration
+- **Claude Code**: Configure models via Claude Code settings; review is single-agent.
+- **Factory/Droid**: Edit droid frontmatter directly; review is single-agent.
+- **Universal**: Platform-specific configuration; review is single-agent.
 
 ---
 

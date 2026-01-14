@@ -115,7 +115,9 @@ os-tk apply --agent all               # Apply config to all
 
 ## Configuration
 
-After running `os-tk init`, configuration is stored in `.os-tk/config.json`:
+After running `os-tk init`, configuration is stored in `.os-tk/config.json`.
+
+**Note:** The example below shows the full OpenCode config. If you initialize without OpenCode, the `reviewer` section will be smaller and omit multi-model scouting fields.
 
 ```json
 {
@@ -167,8 +169,8 @@ After running `os-tk init`, configuration is stored in `.os-tk/config.json`:
 | `useWorktrees` | `true` for safe parallel (isolated branches), `false` for simple mode |
 | `planner.model` | Model for planning/view-only commands |
 | `worker.model` | Model for implementation commands |
-| `reviewer.scouts` | List of models for parallel review scouting |
-| `reviewer.adaptive` | Enable adaptive (complexity-based) review |
+| `reviewer.scouts` | List of models for parallel review scouting (OpenCode only) |
+| `reviewer.adaptive` | Enable adaptive (complexity-based) review (OpenCode only) |
 | `reviewer.autoTrigger` | `false` (manual /tk-review) or `true` (auto after /tk-done) |
 
 See [docs/configuration.md](docs/configuration.md) for complete reference.
@@ -366,7 +368,7 @@ tk query | jq -r '.[] | select(.files_modify[]? == "src/api.ts") | .id'
 
 ## Review Automation
 
-After completing a ticket, `/tk-review` analyzes the implementation against OpenSpec specs:
+After completing a ticket, `/tk-review` analyzes the implementation against OpenSpec specs. On OpenCode, this triggers a multi-model adaptive review pipeline. On other platforms, it runs a single-agent review.
 
 ```bash
 # Review a completed ticket

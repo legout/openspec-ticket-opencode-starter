@@ -284,7 +284,7 @@ Tickets with any of these tags will skip review entirely.
 **Type:** `object[]`  
 **Default:** (List of 4 models including Opus 4.5, GPT-5.2, Mini, Grok)
 
-List of models used for parallel review "scouting". Each scout is read-only and emits findings for aggregation.
+**OpenCode only.** List of models used for parallel review "scouting". Each scout is read-only and emits findings for aggregation.
 
 | Field | Description |
 |-------|-------------|
@@ -295,7 +295,7 @@ List of models used for parallel review "scouting". Each scout is read-only and 
 ### `reviewer.adaptive`
 **Type:** `object`
 
-Configures the adaptive review pipeline which chooses scouts and aggregators based on change complexity.
+**OpenCode only.** Configures the adaptive review pipeline which chooses scouts and aggregators based on change complexity.
 
 | Field | Description |
 |-------|-------------|
@@ -307,7 +307,7 @@ Configures the adaptive review pipeline which chooses scouts and aggregators bas
 ### `reviewer.aggregatorStrong`
 **Type:** `object`
 
-Configures the high-quality aggregator used for large or risky reviews.
+**OpenCode only.** Configures the high-quality aggregator used for large or risky reviews.
 
 | Field | Description |
 |-------|-------------|
@@ -340,7 +340,7 @@ This regenerates the agent files (`.opencode/agent/*.md`) with the updated model
 }
 ```
 
-### Maximum Quality (Multi-Model)
+### Maximum Quality (Multi-Model, OpenCode only)
 ```json
 {
   "useWorktrees": true,
@@ -357,7 +357,7 @@ This regenerates the agent files (`.opencode/agent/*.md`) with the updated model
 }
 ```
 
-### Cost-Optimized (Adaptive)
+### Cost-Optimized (Adaptive, OpenCode only)
 ```json
 {
   "planner": { "model": "openai/gpt-5.2", "reasoningEffort": "high" },

@@ -71,72 +71,9 @@ main() {
 
   echo ""
 
-  # Create project config if in a git repo (or any directory)
-  if [[ ! -f "$CONFIG_FILE" ]]; then
-    mkdir -p "$CONFIG_DIR"
-    cat > "$CONFIG_FILE" << JSON
-{
-  "templateRepo": "$REPO",
-  "templateRef": "$INSTALL_REF",
-  "useWorktrees": true,
-  "worktreeDir": ".worktrees",
-  "defaultParallel": 3,
-  "mainBranch": "main",
-  "autoPush": true,
-  "unsafe": {
-    "allowParallel": false,
-    "allowDirtyDone": false,
-    "commitStrategy": "prompt"
-  },
-  "planner": {
-    "model": "openai/gpt-5.2",
-    "reasoningEffort": "high",
-    "temperature": 0
-  },
-  "worker": {
-    "model": "zai-coding-plan/glm-4.7",
-    "fallbackModels": ["minimax/MiniMax-M2.1"],
-    "reasoningEffort": "none",
-    "temperature": 0.2
-  },
-  "reviewer": {
-    "autoTrigger": false,
-    "categories": ["spec-compliance", "tests", "security", "quality"],
-    "createTicketsFor": ["error"],
-    "skipTags": ["no-review", "wip"],
-    "scouts": [
-      { "id": "opus45", "model": "google/antigravity-claude-opus-4-5-thinking", "reasoningEffort": "max", "temperature": 0 },
-      { "id": "gpt52",  "model": "openai/gpt-5.2-codex", "reasoningEffort": "high", "temperature": 0 },
-      { "id": "mini",   "model": "openai/gpt-5.1-codex-mini", "reasoningEffort": "high", "temperature": 0 },
-      { "id": "grok",   "model": "opencode/grok-fast", "reasoningEffort": "none", "temperature": 0 }
-    ],
-    "adaptive": {
-      "enabled": true,
-      "maxParallelScouts": 3,
-      "thresholds": {
-        "small":  { "maxFiles": 4,  "maxChangedLines": 200 },
-        "medium": { "maxFiles": 12, "maxChangedLines": 800 }
-      },
-      "defaults": {
-        "small":  ["grok", "mini"],
-        "medium": ["grok", "gpt52"],
-        "large":  ["grok", "gpt52", "opus45"]
-      }
-    },
-    "aggregatorStrong": {
-      "model": "openai/gpt-5.2",
-      "reasoningEffort": "medium",
-      "temperature": 0
-    }
-  }
-}
-JSON
-    info "Created: $CONFIG_FILE"
-  else
-    info "Config already exists: $CONFIG_FILE (not overwritten)"
-  fi
+  # We no longer create the config here. It is created by 'os-tk init'
+  # in a way that is specific to the chosen agent platform(s).
 
-  echo ""
   echo "=============================================================================="
   echo " os-tk $VERSION installed!"
   echo "=============================================================================="
@@ -159,7 +96,7 @@ JSON
   echo " NEXT STEPS"
   echo "=============================================================================="
   echo ""
-  echo " 1. Initialize the workflow (downloads .opencode, updates AGENTS.md):"
+  echo " 1. Initialize the workflow in your project root:"
   echo "    os-tk init"
   echo ""
   echo " 2. Commit the workflow files:"
