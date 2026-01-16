@@ -27,40 +27,60 @@ Based on \`reviewer.adaptive\` config:
 
 - **SMALL**: (files <= 4 AND lines <= 200) AND NOT risky
   - Use **FAST** aggregator.
-  - Default scouts: \`grok\`, \`mini\`.
+  - Default scouts: \`shallow-bugs\`, \`spec-audit\`.
 - **MEDIUM**: (files <= 12 AND lines <= 800) AND NOT risky
   - Use **FAST** aggregator.
-  - Default scouts: \`grok\`, \`gpt52\`.
+  - Default scouts: \`shallow-bugs\`, \`spec-audit\`, \`history-context\`.
 - **LARGE / RISKY**: (else)
   - Use **STRONG** aggregator.
-  - Default scouts: \`grok\`, \`gpt52\`, \`opus45\`.
+  - Default scouts: All 7 roles (shallow-bugs, spec-audit, history-context, code-comments, intentional-check, fast-sanity, second-opinion).
 
 ### Manual Overrides
 
 - `--all-scouts`: Run all configured scouts.
-- `--scouts ID,ID`: Run specific subset.
+- `--scouts ROLE,ROLE`: Run specific subset by role (highest precedence).
 - `--no-adaptive`: Skip heuristic, use LARGE/STRONG defaults.
 - `--force-strong` / `--force-fast`: Override aggregator choice.
 
-### Global-Style Reviewer Flags
+### Global-Style Reviewer Flags (7-Scout System)
 
 These flags select reviewers by **role** (from `reviewer.scouts[]` config):
 
-- `--ultimate`: Run all 4 role-based scouts (fast-sanity, standard, deep, second-opinion) + **STRONG aggregator**.
-- `--fast`: Run only the first scout with `role: "fast-sanity"`.
-- `--standard`: Run only the first scout with `role: "standard"`.
-- `--deep`: Run only the first scout with `role: "deep"`.
-- `--seco`: Run only the first scout with `role: "second-opinion"`.
+**Specialized reviewer flags:**
+- `--spec-audit`: Run spec-audit role only (OpenSpec compliance)
+- `--shallow-bugs`: Run shallow-bugs role only (obvious bugs, alias: `--fast`)
+- `--history-context`: Run history-context role only (git blame/comments, alias: `--deep`)
+- `--code-comments`: Run code-comments role only (TODO/FIXME compliance)
+- `--intentional-check`: Run intentional-check role only (intentional vs bug)
+
+**Flexible provider flags (multi-provider support):**
+- `--fast-sanity`: Run fast-sanity role only (quick checks, any provider)
+- `--second-opinion`: Run second-opinion role only (alt perspective, alias: `--seco`)
+
+**Meta flags:**
+- `--ultimate`: Run all 7 role-based scouts + **STRONG aggregator**
+- `--standard`: Run default set (shallow-bugs, spec-audit)
 
 **Precedence rules (highest to lowest):**
-1. `--scouts ID,ID` (manual scout selection, bypasses roles)
-2. Global-style flags (`--ultimate`, `--fast`, `--deep`, `--seco`, `--standard`)
-3. Adaptive complexity-based selection (default when no flags)
+1. `--scouts ROLE,ROLE` (manual role selection, bypasses all flags)
+2. Specialized reviewer flags (`--spec-audit`, `--shallow-bugs`, etc.)
+3. Flexible provider flags (`--fast-sanity`, `--second-opinion`)
+4. `--ultimate` → all 7 scouts + STRONG aggregator
+5. Adaptive complexity-based selection (default when no flags)
+
+**Aliases:**
+- `--fast` → alias for `--shallow-bugs` (backwards compatible)
+- `--seco` → alias for `--second-opinion` (backwards compatible)
 
 **Role mapping:**
 - Flags select scouts by **role** from `config.json` / `.os-tk/config.json` → `reviewer.scouts[]`.
+- `role` is the unique identifier (no separate `id` field needed)
 - One reviewer per role enforced by `os-tk apply` validation.
-- If a requested role is missing from config, error with clear message.
+
+**Adaptive defaults (when no flags):**
+- Small (≤4 files, ≤200 lines): `shallow-bugs`, `spec-audit`
+- Medium (≤12 files, ≤800 lines): `shallow-bugs`, `spec-audit`, `history-context`
+- Large / risky: All 7 scouts
 
 **Ultimate mode behavior:**
 - `--ultimate` ⇒ always uses STRONG aggregator (regardless of diff size/risk).

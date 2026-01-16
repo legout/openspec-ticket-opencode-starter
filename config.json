@@ -32,35 +32,54 @@
       "security",
       "quality"
     ],
-    "createTicketsFor": [
-      "error"
-    ],
+    "confidenceThreshold": 80,
+    "hybridFiltering": true,
+    "requireSeverity": ["error"],
+    "requireConfidence": 80,
     "skipTags": [
       "no-review",
       "wip"
     ],
     "scouts": [
       {
-        "id": "opus45",
-        "model": "google/antigravity-claude-opus-4-5-thinking",
-        "reasoningEffort": "max",
-        "temperature": 0
-      },
-      {
-        "id": "gpt52",
+        "role": "spec-audit",
         "model": "openai/gpt-5.2-codex",
         "reasoningEffort": "high",
         "temperature": 0
       },
       {
-        "id": "mini",
-        "model": "openai/gpt-5.1-codex-mini",
+        "role": "shallow-bugs",
+        "model": "openai/gpt-5.2-codex",
         "reasoningEffort": "high",
         "temperature": 0
       },
       {
-        "id": "grok",
+        "role": "history-context",
+        "model": "google/antigravity-claude-opus-4-5-thinking",
+        "reasoningEffort": "max",
+        "temperature": 0
+      },
+      {
+        "role": "code-comments",
+        "model": "openai/gpt-5.2-codex",
+        "reasoningEffort": "high",
+        "temperature": 0
+      },
+      {
+        "role": "intentional-check",
+        "model": "openai/gpt-5.2-codex",
+        "reasoningEffort": "high",
+        "temperature": 0
+      },
+      {
+        "role": "fast-sanity",
         "model": "opencode/grok-fast",
+        "reasoningEffort": "none",
+        "temperature": 0
+      },
+      {
+        "role": "second-opinion",
+        "model": "minimax/MiniMax-M2.1",
         "reasoningEffort": "none",
         "temperature": 0
       }
@@ -79,19 +98,9 @@
         }
       },
       "defaults": {
-        "small": [
-          "grok",
-          "mini"
-        ],
-        "medium": [
-          "grok",
-          "gpt52"
-        ],
-        "large": [
-          "grok",
-          "gpt52",
-          "opus45"
-        ]
+        "small": ["shallow-bugs", "spec-audit"],
+        "medium": ["shallow-bugs", "spec-audit", "history-context"],
+        "large": ["shallow-bugs", "spec-audit", "history-context", "code-comments", "intentional-check", "fast-sanity", "second-opinion"]
       }
     },
     "aggregatorStrong": {

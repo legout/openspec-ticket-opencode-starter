@@ -43,24 +43,47 @@ For each scout in the list:
 3. Provide the complete Review Packet (ticket context, diff, OpenSpec specs, risk signals).
 4. Run up to `--parallel` (default 3) in parallel.
 
-## Step 4: Aggregate and Merge
+## Step 4: Apply Hybrid Filtering
+
+For each merged finding:
+
+1. **Load config**: Read `.os-tk/config.json` for filtering settings
+2. **Check severity**: `if finding.severity in config.requireSeverity`
+3. **Check confidence**: `if finding.confidence >= config.requireConfidence`
+4. **Apply hybrid**: `if config.hybridFiltering: require BOTH pass`
+5. **Downgrade if needed**: Errors with low confidence (< threshold-10) → warning or skip
+
+## Step 5: Aggregate and Merge
 
 1. Collect all envelopes.
 2. Deduplicate findings:
    - Match by (category, title, file).
    - Resolve severity: use the MAX level among reporting scouts.
+   - Resolve confidence: use the MIN level among reporting scouts (conservative).
    - Record "Sources" for each finding.
-3. If any scout marked finding severity in \`reviewer.createTicketsFor\`:
-   - Prepare fix ticket details.
-   - Guardrail: if \`error\` but no file:line evidence, downgrade to \`warning\`.
+   - Record "agreement count" (e.g., "2/3 scouts flagged this").
+3. Apply hybrid filtering (see Step 4).
 
-## Step 5: Write Results (EXCLUSIVE WRITER)
+## Step 6: Write Results (EXCLUSIVE WRITER)
 
-1. **Add Note**: Call \`tk add-note <ticket-id> "<consolidated-markdown>"\`.
-2. **Create Tickets**: For each merged finding meeting threshold:
+1. **Add Note**: Call \`tk add-note <ticket-id>\` with:
+   - Findings that passed hybrid filter
+   - Skipped findings table (findings that failed thresholds)
+2. **Create Tickets**: For each finding that passed hybrid filter:
    - Call \`tk create "Fix: <title>" --parent <epic-id> --description "<desc> sources: <scouts>"\`.
    - Call \`tk link <new-id> <ticket-id>\`.
 
-## Step 6: Final Summary
+**Note format includes:**
+\`\`\`markdown
+### Findings (passed hybrid filter: severity=\`error\`, confidence>=80)
+| Category | Severity | Confidence | Finding | Sources |
+...
+
+### Skipped (failed threshold)
+| Category | Severity | Confidence | Reason |
+...
+\`\`\`
+
+## Step 7: Final Summary
 
 Print a brief summary of findings and created tickets.
