@@ -6,7 +6,55 @@ A lightweight, agent-friendly workflow that combines:
 - **ticket (`tk`)** for git-backed task tracking (ready/blocked queues + dependencies)
 - **Multi-agent support** for OpenCode, Claude Code, Factory/Droid, and more
 
-This repo is a template. Use `os-tk` to install the workflow into any project, giving *any* coding agent consistent operating rules via `AGENTS.md`, while agent-specific platforms get their own commands and skills.
+This repo is a **template-based workflow**. Use `os-tk` to install the workflow into any project, giving *any* coding agent consistent operating rules via `AGENTS.md`, while agent-specific platforms get their own commands and skills.
+
+## Template-Based Architecture
+
+**Opencode is the source of truth** for workflow semantics. Platform-specific assets (agents, commands, skills) are generated from shared templates stored in `templates/shared/`, with platform-specific overlays defined in `templates/platform/overlays.md`.
+
+### Template Workflow
+
+```
+templates/shared/          # Shared templates (opencode-derived)
+  ├── agent/*.md.template # Agent definitions with conditionals
+  ├── command/*.md.template # Command definitions with conditionals
+  └── skill/*/SKILL.md.template # Skill definitions with conditionals
+
+templates/platform/
+  └── overlays.md         # Platform-specific deltas (directory names, frontmatter)
+
+opencode/                 # Generated from templates (default platform)
+  ├── agent/
+  ├── command/
+  └── skill/
+
+claude/                   # Generated from templates (if --agent claude)
+factory/                  # Generated from templates (if --agent factory)
+pi/                       # Generated from templates (if --agent pi)
+```
+
+### Platform Sync Behavior
+
+When you run `os-tk init` or `os-tk sync`:
+
+1. **Download**: Fetch template sources from `templateRepo@templateRef`
+2. **Render**: Apply platform-specific conditionals (handlebars-style: `{{#opencode}}...{{/opencode}}`)
+3. **Generate**: Write rendered outputs to platform directories
+4. **Validate**: Verify frontmatter and directory structure match platform conventions
+
+When you run `os-tk apply`:
+
+1. **Re-render**: Regenerate platform files from existing templates (no network)
+2. **Apply config**: Update model settings and configuration in frontmatter
+
+### Source of Truth
+
+- **opencode/** content defines shared workflow semantics
+- **templates/shared/** contains conditional templates derived from opencode
+- **templates/platform/overlays.md** defines platform-specific deltas
+- Generated platforms (claude/factory/pi) are outputs, not manual edits
+
+To update workflow semantics, edit `templates/shared/*.template` and run `os-tk apply`.
 
 ---
 
@@ -90,8 +138,8 @@ set -gx PATH $HOME/.local/bin $PATH
 | Command | Description |
 |---------|-------------|
 | `os-tk init [options]` | Initialize project (sync + apply + update AGENTS.md) |
-| `os-tk sync [--agent <platforms>]` | Download agent files from templateRepo@templateRef |
-| `os-tk apply [--agent <platforms>]` | Re-apply config to agents (no network, no AGENTS.md) |
+| `os-tk sync [--agent <platforms>]` | Download templates from templateRepo@templateRef and render platform outputs |
+| `os-tk apply [--agent <platforms>]` | Re-render platform files from templates (no network, applies config) |
 | `os-tk version` | Show os-tk version and project templateRef |
 
 ### Agent Platform Options
@@ -185,8 +233,21 @@ See [docs/configuration.md](docs/configuration.md) for complete reference.
 To update to a newer version:
 
 1. Edit `config.json` and change `templateRef` to the new tag (or `latest`)
-2. Run `os-tk sync` to download updated files
+2. Run `os-tk sync` to download updated templates and regenerate platform outputs
 3. Commit the changes
+
+### Customizing Templates
+
+To customize workflow semantics for your project:
+
+1. **Edit shared templates**: Modify `templates/shared/*.template` files
+   - These define the shared workflow logic
+   - Use handlebars conditionals for platform-specific content: `{{#opencode}}...{{/opencode}}`
+2. **Edit platform overlays**: Modify `templates/platform/overlays.md` for platform-specific deltas
+3. **Apply changes**: Run `os-tk apply` to regenerate platform directories
+4. **Commit templates**: Commit `templates/` to preserve your customizations
+
+**Important**: Do NOT manually edit files in `.opencode/`, `.claude/`, `.factory/`, or `.pi/`. These are generated outputs and will be overwritten on sync/apply.
 
 ---
 
@@ -196,6 +257,13 @@ Running `os-tk init` creates/updates these files in your project:
 
 ```
 config.json              # Project config (commit this)
+templates/               # Shared templates (commit these for customization)
+  shared/
+    agent/*.md.template  # Agent templates (opencode-derived)
+    command/*.md.template # Command templates (opencode-derived)
+    skill/*/SKILL.md.template # Skill templates (opencode-derived)
+  platform/
+    overlays.md          # Platform-specific deltas
 
 # OpenCode (--agent opencode, default)
 .opencode/
@@ -235,6 +303,15 @@ AGENTS.md                  # Agent-agnostic workflow rules (all platforms)
 ```
 
 **Commit these files** to share the workflow with your team.
+
+### Customization
+
+To customize workflow behavior:
+
+1. **For shared semantics**: Edit `templates/shared/*.template` (opencode is source of truth)
+2. **For platform-specific behavior**: Edit `templates/platform/overlays.md`
+3. **Apply changes**: Run `os-tk apply` to regenerate platform files
+4. **Do NOT manually edit** generated `.opencode/`, `.claude/`, etc. files (changes will be overwritten on sync)
 
 ---
 
@@ -311,6 +388,38 @@ When all tasks are complete, `/tk-done` auto-archives the OpenSpec change.
 | `/tk-review <id>` | Review completed ticket, create fix tickets if needed |
 | `/tk-run [<ticket-id>] [--epic <epic-id>] [--ralph] [--max-cycles N]` | Autonomous loop: start → done → review → repeat |
 | `/tk-refactor` | Merge duplicates, clean up backlog |
+
+---
+
+## Opencode as Source of Truth
+
+This workflow uses a **template-based generation system** where opencode is the canonical source for shared workflow semantics:
+
+- **Shared semantics defined once**: Opencode content defines the core workflow logic
+- **Templates derive from opencode**: `templates/shared/*.template` files are derived from opencode content
+- **Platform outputs generated**: Other platforms (claude/factory/pi) are generated outputs, not manual implementations
+- **Overlays for platform specifics**: `templates/platform/overlays.md` defines directory names, frontmatter, and platform checks
+- **Sync regenerates outputs**: `os-tk sync` fetches templates and regenerates all platform directories
+
+### What This Means
+
+- **Edit templates, not outputs**: Modify `templates/shared/*.template` to change shared logic
+- **Consistency guaranteed**: All platforms implement the same core workflow
+- **Platform customization**: Use overlays for platform-specific behavior (frontmatter, checks)
+- **Upstream updates**: Change `templateRef` in `config.json` and run `os-tk sync` to get updates
+
+### Source Hierarchy
+
+```
+1. templates/shared/*.template     ← Edit this for shared logic
+   (opencode-derived with conditionals)
+       ↓
+2. templates/platform/overlays.md  ← Edit this for platform deltas
+   (directory names, frontmatter, checks)
+       ↓
+3. .opencode/, .claude/, etc.      ← Generated (do NOT edit)
+   (outputs from template rendering)
+```
 
 ---
 
@@ -444,6 +553,7 @@ For more details, see the `docs/` folder:
 
 - [**Multi-Agent Support**](docs/multi-agent-support.md) — Platform comparison, installation, and configuration
 - [**Configuration Reference**](docs/configuration.md) — Complete guide to all config options
+- [**Template Workflow**](docs/template-workflow.md) — Template-based architecture, opencode as source of truth, and sync behavior
 - [**Model Selection Rationale**](docs/models.md) — Why we use strong reasoning models for planning and fast OSS models for implementation
 - [**Versioning and Releases**](docs/versioning.md) — SemVer scheme, release process, version pinning
 

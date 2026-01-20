@@ -202,126 +202,297 @@ resolve_template_ref() {
 }
 
 # =============================================================================
-# SYNC: Download files from template repo for each agent platform
+# TEMPLATE RENDERING
 # =============================================================================
 
-# OpenCode files (canonical source)
-OPENCODE_FILES=(
-  "agent/os-tk-planner.md"
-  "agent/os-tk-orchestrator.md"
-  "agent/os-tk-worker.md"
-  "agent/os-tk-reviewer.md"
-  "agent/os-tk-reviewer-agg-fast.md"
-  "agent/os-tk-reviewer-agg-strong.md"
-  "agent/os-tk-agent-spec.md"
-  "agent/os-tk-agent-design.md"
-  "agent/os-tk-agent-safety.md"
-  "agent/os-tk-agent-scout.md"
-  "agent/os-tk-agent-quality.md"
-  "agent/os-tk-agent-simplify.md"
-  "command/os-breakdown.md"
-  "command/os-change.md"
-  "command/os-proposal.md"
-  "command/tk-bootstrap.md"
-  "command/tk-done.md"
-  "command/tk-queue.md"
-  "command/tk-refactor.md"
-  "command/tk-review.md"
-  "command/tk-review-fast.md"
-  "command/tk-review-strong.md"
-  "command/tk-run.md"
-  "command/tk-start.md"
-  "skill/openspec/SKILL.md"
-  "skill/tk-frontmatter/SKILL.md"
-  "skill/ticket/SKILL.md"
-  "skill/os-tk-workflow/SKILL.md"
-)
+# Platform directory mappings (relative to platform root)
+PLATFORM_DIR_MAPPING='
+{
+  "opencode": {
+    "agent": "agent",
+    "command": "command",
+    "skill": "skill"
+  },
+  "claude": {
+    "agent": "agents",
+    "command": "commands",
+    "skill": "skills"
+  },
+  "factory": {
+    "agent": "droids",
+    "command": "commands",
+    "skill": "skills"
+  },
+  "pi": {
+    "agent": "agents",
+    "command": "prompts",
+    "skill": "skills"
+  }
+}
+'
 
-# Claude Code files
-CLAUDE_FILES=(
-  "agents/os-tk-planner.md"
-  "agents/os-tk-orchestrator.md"
-  "agents/os-tk-worker.md"
-  "agents/os-tk-reviewer.md"
-  "agents/os-tk-agent-spec.md"
-  "agents/os-tk-agent-design.md"
-  "agents/os-tk-agent-safety.md"
-  "agents/os-tk-agent-scout.md"
-  "agents/os-tk-agent-quality.md"
-  "agents/os-tk-agent-simplify.md"
-  "commands/os-breakdown.md"
-  "commands/os-change.md"
-  "commands/os-proposal.md"
-  "commands/tk-bootstrap.md"
-  "commands/tk-done.md"
-  "commands/tk-queue.md"
-  "commands/tk-refactor.md"
-  "commands/tk-review.md"
-  "commands/tk-run.md"
-  "commands/tk-start.md"
-  "skills/openspec/SKILL.md"
-  "skills/tk-frontmatter/SKILL.md"
-  "skills/ticket/SKILL.md"
-  "skills/os-tk-workflow/SKILL.md"
-)
+# Get platform directory for a given type
+get_platform_dir() {
+  local platform="$1"
+  local type="$2"
+  echo "$PLATFORM_DIR_MAPPING" | jq -r ".${platform}.${type} // empty"
+}
 
-# Factory/Droid files
-FACTORY_FILES=(
-  "droids/os-tk-planner.md"
-  "droids/os-tk-orchestrator.md"
-  "droids/os-tk-worker.md"
-  "droids/os-tk-reviewer.md"
-  "droids/os-tk-agent-spec.md"
-  "droids/os-tk-agent-design.md"
-  "droids/os-tk-agent-safety.md"
-  "droids/os-tk-agent-scout.md"
-  "droids/os-tk-agent-quality.md"
-  "droids/os-tk-agent-simplify.md"
-  "commands/os-breakdown.md"
-  "commands/os-change.md"
-  "commands/os-proposal.md"
-  "commands/tk-bootstrap.md"
-  "commands/tk-done.md"
-  "commands/tk-queue.md"
-  "commands/tk-refactor.md"
-  "commands/tk-review.md"
-  "commands/tk-run.md"
-  "commands/tk-start.md"
-  "skills/openspec/SKILL.md"
-  "skills/tk-frontmatter/SKILL.md"
-  "skills/ticket/SKILL.md"
-  "skills/os-tk-workflow/SKILL.md"
-)
+# Render a template by applying platform-specific conditionals
+render_template() {
+  local template_file="$1"
+  local platform="$2"
 
-# Pi files
-PI_FILES=(
-  "agents/os-tk-planner.md"
-  "agents/os-tk-orchestrator.md"
-  "agents/os-tk-worker.md"
-  "agents/os-tk-reviewer.md"
-  "agents/os-tk-reviewer-agg-fast.md"
-  "agents/os-tk-reviewer-agg-strong.md"
-  "agents/os-tk-agent-spec.md"
-  "agents/os-tk-agent-design.md"
-  "agents/os-tk-agent-safety.md"
-  "agents/os-tk-agent-scout.md"
-  "agents/os-tk-agent-quality.md"
-  "agents/os-tk-agent-simplify.md"
-  "prompts/os-breakdown.md"
-  "prompts/os-change.md"
-  "prompts/os-proposal.md"
-  "prompts/tk-bootstrap.md"
-  "prompts/tk-done.md"
-  "prompts/tk-queue.md"
-  "prompts/tk-refactor.md"
-  "prompts/tk-review.md"
-  "prompts/tk-run.md"
-  "prompts/tk-start.md"
-  "skills/openspec/SKILL.md"
-  "skills/tk-frontmatter/SKILL.md"
-  "skills/ticket/SKILL.md"
-  "skills/os-tk-workflow/SKILL.md"
-)
+  local content
+  content=$(cat "$template_file")
+
+  # Process each platform's conditionals
+  case "$platform" in
+    opencode)
+      # Keep {{#opencode}} blocks, remove others
+      content=$(echo "$content" | sed -e '/{{#claude}}/,/{{\/claude}}/d' \
+                                  -e '/{{#factory}}/,/{{\/factory}}/d' \
+                                  -e '/{{#pi}}/,/{{\/pi}}/d' \
+                                  -e 's/{{#opencode}}//g' \
+                                  -e 's/{{\/opencode}}//g')
+      ;;
+    claude)
+      # Keep {{#claude}} blocks, remove others
+      content=$(echo "$content" | sed -e '/{{#opencode}}/,/{{\/opencode}}/d' \
+                                  -e '/{{#factory}}/,/{{\/factory}}/d' \
+                                  -e '/{{#pi}}/,/{{\/pi}}/d' \
+                                  -e 's/{{#claude}}//g' \
+                                  -e 's/{{\/claude}}//g')
+      ;;
+    factory)
+      # Keep {{#factory}} blocks, remove others
+      content=$(echo "$content" | sed -e '/{{#opencode}}/,/{{\/opencode}}/d' \
+                                  -e '/{{#claude}}/,/{{\/claude}}/d' \
+                                  -e '/{{#pi}}/,/{{\/pi}}/d' \
+                                  -e 's/{{#factory}}//g' \
+                                  -e 's/{{\/factory}}//g')
+      ;;
+    pi)
+      # Keep {{#pi}} blocks, remove others
+      content=$(echo "$content" | sed -e '/{{#opencode}}/,/{{\/opencode}}/d' \
+                                  -e '/{{#claude}}/,/{{\/claude}}/d' \
+                                  -e '/{{#factory}}/,/{{\/factory}}/d' \
+                                  -e 's/{{#pi}}//g' \
+                                  -e 's/{{\/pi}}//g')
+      ;;
+  esac
+
+  echo "$content"
+}
+
+# Sync templates from template repo
+sync_templates() {
+  local base_url="$1"
+  local ref="$2"
+
+  echo "Downloading templates from $base_url/templates/..."
+
+  # Create templates directory structure
+  mkdir -p "templates/shared/agent"
+  mkdir -p "templates/shared/command"
+  mkdir -p "templates/shared/skill"
+  mkdir -p "templates/platform"
+
+  # Download MANIFEST.md (provides validation)
+  if curl -sSfL "$base_url/templates/MANIFEST.md" -o "templates/MANIFEST.md" 2>/dev/null; then
+    echo "  [ok] templates/MANIFEST.md"
+  else
+    echo "  [warning] templates/MANIFEST.md not found"
+  fi
+
+  # Download platform overlays
+  if curl -sSfL "$base_url/templates/platform/overlays.md" -o "templates/platform/overlays.md" 2>/dev/null; then
+    echo "  [ok] templates/platform/overlays.md"
+  else
+    echo "  [warning] templates/platform/overlays.md not found"
+  fi
+
+  # Download shared agent templates
+  local agent_templates=(
+    "os-tk-planner"
+    "os-tk-worker"
+    "os-tk-orchestrator"
+    "os-tk-agent-spec"
+    "os-tk-agent-design"
+    "os-tk-agent-safety"
+    "os-tk-agent-scout"
+    "os-tk-agent-quality"
+    "os-tk-agent-simplify"
+    "os-tk-reviewer-lead"
+    "os-tk-reviewer-role-spec-audit"
+    "os-tk-reviewer-role-bug-footgun"
+    "os-tk-reviewer-role-second-opinion"
+    "os-tk-reviewer-role-generalist"
+  )
+
+  for tmpl in "${agent_templates[@]}"; do
+    if curl -sSfL "$base_url/templates/shared/agent/${tmpl}.md.template" -o "templates/shared/agent/${tmpl}.md.template" 2>/dev/null; then
+      echo "  [ok] templates/shared/agent/${tmpl}.md.template"
+    else
+      echo "  [warning] templates/shared/agent/${tmpl}.md.template not found"
+    fi
+  done
+
+  # Download shared command templates
+  local command_templates=(
+    "tk-start"
+  )
+
+  for tmpl in "${command_templates[@]}"; do
+    if curl -sSfL "$base_url/templates/shared/command/${tmpl}.md.template" -o "templates/shared/command/${tmpl}.md.template" 2>/dev/null; then
+      echo "  [ok] templates/shared/command/${tmpl}.md.template"
+    else
+      echo "  [warning] templates/shared/command/${tmpl}.md.template not found"
+    fi
+  done
+
+  # Download shared skill templates
+  local skill_dirs=(
+    "openspec"
+    "tk-frontmatter"
+    "ticket"
+    "os-tk-workflow"
+  )
+
+  for skill_dir in "${skill_dirs[@]}"; do
+    mkdir -p "templates/shared/skill/${skill_dir}"
+    if curl -sSfL "$base_url/templates/shared/skill/${skill_dir}/SKILL.md.template" -o "templates/shared/skill/${skill_dir}/SKILL.md.template" 2>/dev/null; then
+      echo "  [ok] templates/shared/skill/${skill_dir}/SKILL.md.template"
+    else
+      echo "  [warning] templates/shared/skill/${skill_dir}/SKILL.md.template not found"
+    fi
+  done
+
+  echo "Template download complete."
+}
+
+# Render templates to a specific platform directory
+render_to_platform() {
+  local platform="$1"
+  local target_dir="$2"
+  local config="$3"
+
+  echo "Rendering templates for $platform → $target_dir/"
+
+  # Get directory mappings for this platform
+  local agent_dir command_dir skill_dir
+  agent_dir=$(get_platform_dir "$platform" "agent")
+  command_dir=$(get_platform_dir "$platform" "command")
+  skill_dir=$(get_platform_dir "$platform" "skill")
+
+  if [[ -z "$agent_dir" || -z "$command_dir" || -z "$skill_dir" ]]; then
+    echo "Error: Invalid platform '$platform' or missing directory mappings"
+    return 1
+  fi
+
+  # Create platform directories
+  mkdir -p "$target_dir/$agent_dir"
+  mkdir -p "$target_dir/$command_dir"
+  mkdir -p "$target_dir/$skill_dir"
+
+  local rendered=0
+  local failed=0
+
+  # Render agent templates
+  for template_file in templates/shared/agent/*.md.template; do
+    if [[ -f "$template_file" ]]; then
+      local basename
+      basename=$(basename "$template_file" .template)
+      local output_file="$target_dir/$agent_dir/$basename"
+
+      if render_template "$template_file" "$platform" > "$output_file"; then
+        echo "  [ok] $output_file"
+        ((rendered++)) || true
+      else
+        echo "  [FAIL] $output_file"
+        ((failed++)) || true
+      fi
+    fi
+  done
+
+  # Render command templates
+  for template_file in templates/shared/command/*.md.template; do
+    if [[ -f "$template_file" ]]; then
+      local basename
+      basename=$(basename "$template_file" .template)
+      local output_file="$target_dir/$command_dir/$basename"
+
+      if render_template "$template_file" "$platform" > "$output_file"; then
+        echo "  [ok] $output_file"
+        ((rendered++)) || true
+      else
+        echo "  [FAIL] $output_file"
+        ((failed++)) || true
+      fi
+    fi
+  done
+
+  # Render skill templates
+  for skill_dir_template in templates/shared/skill/*/; do
+    if [[ -d "$skill_dir_template" ]]; then
+      local skill_name
+      skill_name=$(basename "$skill_dir_template")
+      local output_skill_dir="$target_dir/$skill_dir/$skill_name"
+      mkdir -p "$output_skill_dir"
+
+      for template_file in "$skill_dir_template"*.md.template; do
+        if [[ -f "$template_file" ]]; then
+          local basename
+          basename=$(basename "$template_file" .template)
+          local output_file="$output_skill_dir/$basename"
+
+          if render_template "$template_file" "$platform" > "$output_file"; then
+            echo "  [ok] $output_file"
+            ((rendered++)) || true
+          else
+            echo "  [FAIL] $output_file"
+            ((failed++)) || true
+          fi
+        fi
+      done
+    fi
+  done
+
+  # For opencode platform, generate reviewer scouts from config
+  if [[ "$platform" == "opencode" ]]; then
+    rebuild_reviewer_scouts "$target_dir" "$config"
+  fi
+
+  # For pi platform, generate scouts in agents/ dir
+  if [[ "$platform" == "pi" ]]; then
+    local scouts_json
+    scouts_json=$(echo "$config" | jq -c '.reviewer.scouts // []')
+    if [[ "$scouts_json" != "[]" ]]; then
+      echo "  - Generating reviewer scouts for Pi..."
+      local count
+      count=$(echo "$scouts_json" | jq '. | length')
+      for ((i=0; i<count; i++)); do
+        local scout role model temp reasoning
+        scout=$(echo "$scouts_json" | jq -c ".[$i]")
+        role=$(echo "$scout" | jq -r '.role')
+        model=$(echo "$scout" | jq -r '.model')
+        temp=$(echo "$scout" | jq -r '.temperature // 0')
+        reasoning=$(echo "$scout" | jq -r '.reasoningEffort // "none"')
+        rebuild_scout_from_template "$target_dir/$agent_dir/os-tk-reviewer-scout-${role}.md" "$role" "$model" "$temp" "$reasoning"
+        echo "    [ok] os-tk-reviewer-scout-${role}.md"
+        ((rendered++)) || true
+      done
+    fi
+  fi
+
+  echo "Rendered $rendered files for $platform"
+  if [[ $failed -gt 0 ]]; then
+    echo "Warning: $failed file(s) failed to render"
+    return 1
+  fi
+
+  return 0
+}
 
 # Default agent platforms (comma-separated)
 DEFAULT_AGENTS="opencode"
@@ -367,95 +538,11 @@ get_agent_dir() {
   esac
 }
 
-# Get source directory in template repo for an agent platform
-get_template_dir() {
-  local agent="$1"
-  case "$agent" in
-    opencode)  echo "opencode" ;;
-    claude)    echo "claude" ;;
-    factory)   echo "factory" ;;
-    pi)        echo "pi" ;;
-    *)
-      echo "Error: Unknown agent: $agent" >&2
-      return 1
-      ;;
-  esac
-}
-
-# Get file array for an agent platform
-get_agent_files() {
-  local agent="$1"
-  case "$agent" in
-    opencode)  echo "${OPENCODE_FILES[@]}" ;;
-    claude)    echo "${CLAUDE_FILES[@]}" ;;
-    factory)   echo "${FACTORY_FILES[@]}" ;;
-    pi)        echo "${PI_FILES[@]}" ;;
-    *)
-      echo "Error: Unknown agent: $agent" >&2
-      return 1
-      ;;
-  esac
-}
-
-# Sync files for a single agent platform
-sync_agent_platform() {
-  local agent="$1"
-  local base_url="$2"
-  
-  local target_dir template_dir
-  target_dir=$(get_agent_dir "$agent")
-  template_dir=$(get_template_dir "$agent")
-  
-  echo "Syncing $agent → $target_dir/ (source: $template_dir/)"
-  
-  # Get file list based on agent
-  local files
-  case "$agent" in
-    opencode)  files=("${OPENCODE_FILES[@]}") ;;
-    claude)    files=("${CLAUDE_FILES[@]}") ;;
-    factory)   files=("${FACTORY_FILES[@]}") ;;
-    pi)        files=("${PI_FILES[@]}") ;;
-  esac
-  
-  # Create all required directories
-  for file in "${files[@]}"; do
-    local dir
-    dir=$(dirname "$target_dir/$file")
-    mkdir -p "$dir"
-  done
-  
-  # Download files
-  local failed=0
-  for file in "${files[@]}"; do
-    local url="$base_url/$template_dir/$file"
-    local dest="$target_dir/$file"
-    
-    if curl -sSfL "$url" -o "$dest" 2>/dev/null; then
-      echo "  [ok] $dest"
-    else
-      # Fallback to hidden directory for older template tags
-      local fallback_url="$base_url/.$template_dir/$file"
-      if curl -sSfL "$fallback_url" -o "$dest" 2>/dev/null; then
-         echo "  [ok] $dest (from fallback .$template_dir/)"
-      else
-        echo "  [FAIL] $dest"
-        ((failed++)) || true
-      fi
-    fi
-  done
-  
-  if [[ $failed -gt 0 ]]; then
-    echo "  Warning: $failed file(s) failed for $agent"
-  fi
-  
-  return $failed
-}
-
 cmd_sync() {
   check_dependencies
-  
+
   local agents_input="$DEFAULT_AGENTS"
-  
+
   # Parse flags
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -469,41 +556,52 @@ cmd_sync() {
         ;;
     esac
   done
-  
+
   local agents
   agents=$(parse_agents "$agents_input")
-  
+
   local config
   config=$(load_config)
-  
+
   local repo
   repo=$(get_config_value "$config" '.templateRepo' 'legout/openspec-ticket-opencode-starter')
-  
+
   local ref
   ref=$(resolve_template_ref "$config")
-  
+
   local base_url="https://raw.githubusercontent.com/$repo/$ref"
-  
+
   echo "Syncing from $repo@$ref"
   echo "Agents: $agents"
   echo ""
-  
-  # Sync each selected agent platform
+
+  # Step 1: Download templates to templates/ directory
+  sync_templates "$base_url" "$ref"
+  echo ""
+
+  # Step 2: Render templates to each selected agent platform
   local total_failed=0
   local IFS=','
   for agent in $agents; do
-    sync_agent_platform "$agent" "$base_url"
-    ((total_failed += $?)) || true
+    local target_dir
+    target_dir=$(get_agent_dir "$agent")
+
+    echo "Rendering to $agent → $target_dir/"
+    if render_to_platform "$agent" "$target_dir" "$config"; then
+      echo "  ✓ Render complete"
+    else
+      echo "  ✗ Render failed"
+      ((total_failed++)) || true
+    fi
     echo ""
   done
-  
+
   if [[ $total_failed -gt 0 ]]; then
-    echo "Warning: Some files failed to download."
-    echo "Check that templateRef '$ref' exists and contains all required files."
+    echo "Warning: Some platforms failed to render."
   fi
-  
+
   echo "Sync complete."
-  
+
   # Also update AGENTS.md block
   echo ""
   update_agents_md
@@ -1332,9 +1430,9 @@ check_pi_subagent_extension() {
 
 cmd_apply() {
   check_dependencies
-  
+
   local agents_input=""
-  
+
   # Parse flags
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -1348,210 +1446,53 @@ cmd_apply() {
         ;;
     esac
   done
-  
+
   local config
   config=$(load_config)
-  
+
   # Get agents from flag, config, or default
   if [[ -z "$agents_input" ]]; then
     agents_input=$(get_config_value "$config" '.agents' "$DEFAULT_AGENTS")
   fi
-  
+
   local agents
   agents=$(parse_agents "$agents_input")
-  
+
   echo "Applying config to agents: $agents"
   echo ""
-  
-  # Extract planner config
-  local planner_model planner_temp planner_reasoning
-  planner_model=$(get_config_value "$config" '.planner.model' 'openai/gpt-5.2')
-  planner_temp=$(get_config_value "$config" '.planner.temperature' '0')
-  planner_reasoning=$(get_config_value "$config" '.planner.reasoningEffort' '')
-  
-  # Extract worker config
-  local worker_model worker_temp worker_reasoning
-  worker_model=$(get_config_value "$config" '.worker.model' 'zai-coding-plan/glm-4.7')
-  worker_temp=$(get_config_value "$config" '.worker.temperature' '0.2')
-  worker_reasoning=$(get_config_value "$config" '.worker.reasoningEffort' '')
-  
-  # Extract reviewer config
-  local reviewer_model reviewer_temp reviewer_reasoning
-  reviewer_model=$(get_config_value "$config" '.reviewer.model' 'openai/gpt-5.2')
-  reviewer_temp=$(get_config_value "$config" '.reviewer.temperature' '0')
-  reviewer_reasoning=$(get_config_value "$config" '.reviewer.reasoningEffort' 'high')
-  
-  # Extract aggregator strong config
-  local agg_strong_model agg_strong_temp agg_strong_reasoning
-  agg_strong_model=$(get_config_value "$config" '.reviewer.aggregatorStrong.model' 'openai/gpt-5.2')
-  agg_strong_temp=$(get_config_value "$config" '.reviewer.aggregatorStrong.temperature' '0')
-  agg_strong_reasoning=$(get_config_value "$config" '.reviewer.aggregatorStrong.reasoningEffort' 'medium')
-  
-  # Apply to each selected agent platform
+
+  # Check if templates directory exists
+  if [[ ! -d "templates/shared" ]]; then
+    echo "Error: templates/shared directory not found."
+    echo "Run 'os-tk sync' first to download templates."
+    exit 1
+  fi
+
+  # Render templates to each selected agent platform
+  local total_failed=0
   local IFS=','
   for agent in $agents; do
-    apply_agent_platform "$agent" \
-      "$planner_model" "$planner_temp" "$planner_reasoning" \
-      "$worker_model" "$worker_temp" "$worker_reasoning" \
-      "$reviewer_model" "$reviewer_temp" "$reviewer_reasoning" \
-      "$agg_strong_model" "$agg_strong_temp" "$agg_strong_reasoning" \
-      "$config"
+    local target_dir
+    target_dir=$(get_agent_dir "$agent")
+
+    echo "Applying to $agent → $target_dir/"
+    if render_to_platform "$agent" "$target_dir" "$config"; then
+      echo "  ✓ Render complete"
+    else
+      echo "  ✗ Render failed"
+      ((total_failed++)) || true
+    fi
+    echo ""
   done
-  
+
+  if [[ $total_failed -gt 0 ]]; then
+    echo "Warning: Some platforms failed to render."
+  fi
+
   ensure_gitignore_worktrees "$config"
-  
+
   echo ""
   echo "Config applied."
-}
-
-# Apply config to a specific agent platform
-apply_agent_platform() {
-  local agent="$1"
-  local planner_model="$2" planner_temp="$3" planner_reasoning="$4"
-  local worker_model="$5" worker_temp="$6" worker_reasoning="$7"
-  local reviewer_model="$8" reviewer_temp="$9" reviewer_reasoning="${10}"
-  local agg_strong_model="${11}" agg_strong_temp="${12}" agg_strong_reasoning="${13}"
-  local config="${14}"
-  
-  local target_dir
-  target_dir=$(get_agent_dir "$agent")
-  
-  echo "Applying to $agent → $target_dir/"
-  
-  case "$agent" in
-    opencode)
-      mkdir -p "$target_dir/agent"
-      rebuild_agent_from_template "$target_dir/agent/os-tk-planner.md" "planner" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agent/os-tk-worker.md" "worker" "$worker_model" "$worker_temp" "$worker_reasoning"
-      
-      # Aggregators
-      rebuild_aggregator_from_template "$target_dir/agent/os-tk-reviewer-agg-fast.md" "fast" "$worker_model" "$worker_temp" "$worker_reasoning"
-      rebuild_aggregator_from_template "$target_dir/agent/os-tk-reviewer-agg-strong.md" "strong" "$agg_strong_model" "$agg_strong_temp" "$agg_strong_reasoning"
-      
-      # Keep os-tk-reviewer as aggregator-strong for backward compat/convenience
-      rebuild_aggregator_from_template "$target_dir/agent/os-tk-reviewer.md" "strong" "$agg_strong_model" "$agg_strong_temp" "$agg_strong_reasoning"
-      
-      # Scouts
-      rebuild_reviewer_scouts "$target_dir" "$config"
-      
-      # Advisors
-      rebuild_agent_from_template "$target_dir/agent/os-tk-agent-spec.md" "agent-spec" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agent/os-tk-agent-design.md" "agent-design" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agent/os-tk-agent-safety.md" "agent-safety" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agent/os-tk-agent-scout.md" "agent-scout" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agent/os-tk-agent-quality.md" "agent-quality" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agent/os-tk-agent-simplify.md" "agent-simplify" "$planner_model" "$planner_temp" "$planner_reasoning"
-      
-      echo "  - $target_dir/agent/os-tk-planner.md (model: $planner_model)"
-      echo "  - $target_dir/agent/os-tk-worker.md (model: $worker_model)"
-      echo "  - $target_dir/agent/os-tk-reviewer-agg-fast.md (model: $worker_model)"
-      echo "  - $target_dir/agent/os-tk-reviewer-agg-strong.md (model: $agg_strong_model)"
-      ;;
-    claude)
-      # Claude Code uses different structure - agents are in agents/ dir
-      mkdir -p "$target_dir/agents"
-      rebuild_agent_from_template "$target_dir/agents/os-tk-planner.md" "planner" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agents/os-tk-worker.md" "worker" "$worker_model" "$worker_temp" "$worker_reasoning"
-      rebuild_agent_from_template "$target_dir/agents/os-tk-reviewer.md" "reviewer" "$reviewer_model" "$reviewer_temp" "$reviewer_reasoning"
-      
-      # Advisors
-      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-spec.md" "agent-spec" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-design.md" "agent-design" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-safety.md" "agent-safety" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-scout.md" "agent-scout" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-quality.md" "agent-quality" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-simplify.md" "agent-simplify" "$planner_model" "$planner_temp" "$planner_reasoning"
-      
-      echo "  - $target_dir/agents/os-tk-planner.md"
-      echo "  - $target_dir/agents/os-tk-worker.md"
-      echo "  - $target_dir/agents/os-tk-reviewer.md"
-      echo "  - $target_dir/agents/os-tk-agent-spec.md"
-      echo "  - $target_dir/agents/os-tk-agent-design.md"
-      echo "  - $target_dir/agents/os-tk-agent-safety.md"
-      echo "  - $target_dir/agents/os-tk-agent-scout.md"
-      echo "  - $target_dir/agents/os-tk-agent-quality.md"
-      echo "  - $target_dir/agents/os-tk-agent-simplify.md"
-      ;;
-    factory)
-      # Factory uses droids/ dir with reasoningEffort in frontmatter
-      mkdir -p "$target_dir/droids"
-      rebuild_agent_from_template "$target_dir/droids/os-tk-planner.md" "planner" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/droids/os-tk-worker.md" "worker" "$worker_model" "$worker_temp" "$worker_reasoning"
-      rebuild_agent_from_template "$target_dir/droids/os-tk-reviewer.md" "reviewer" "$reviewer_model" "$reviewer_temp" "$reviewer_reasoning"
-      
-      # Advisors
-      rebuild_agent_from_template "$target_dir/droids/os-tk-agent-spec.md" "agent-spec" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/droids/os-tk-agent-design.md" "agent-design" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/droids/os-tk-agent-safety.md" "agent-safety" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/droids/os-tk-agent-scout.md" "agent-scout" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/droids/os-tk-agent-quality.md" "agent-quality" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/droids/os-tk-agent-simplify.md" "agent-simplify" "$planner_model" "$planner_temp" "$planner_reasoning"
-      
-      echo "  - $target_dir/droids/os-tk-planner.md"
-      echo "  - $target_dir/droids/os-tk-worker.md"
-      echo "  - $target_dir/droids/os-tk-reviewer.md"
-      echo "  - $target_dir/droids/os-tk-agent-spec.md"
-      echo "  - $target_dir/droids/os-tk-agent-design.md"
-      echo "  - $target_dir/droids/os-tk-agent-safety.md"
-      echo "  - $target_dir/droids/os-tk-agent-scout.md"
-      echo "  - $target_dir/droids/os-tk-agent-quality.md"
-      echo "  - $target_dir/droids/os-tk-agent-simplify.md"
-      ;;
-    pi)
-      mkdir -p "$target_dir/agents"
-      
-      # Best-effort model mapping
-      rebuild_agent_from_template "$target_dir/agents/os-tk-planner.md" "planner" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agents/os-tk-worker.md" "worker" "$worker_model" "$worker_temp" "$worker_reasoning"
-      
-      # Aggregators
-      rebuild_aggregator_from_template "$target_dir/agents/os-tk-reviewer-agg-fast.md" "fast" "$worker_model" "$worker_temp" "$worker_reasoning"
-      rebuild_aggregator_from_template "$target_dir/agents/os-tk-reviewer-agg-strong.md" "strong" "$agg_strong_model" "$agg_strong_temp" "$agg_strong_reasoning"
-      
-      # Reviewer (aggregator-strong)
-      rebuild_aggregator_from_template "$target_dir/agents/os-tk-reviewer.md" "strong" "$agg_strong_model" "$agg_strong_temp" "$agg_strong_reasoning"
-      
-      # Advisors for Pi
-      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-spec.md" "agent-spec" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-design.md" "agent-design" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-safety.md" "agent-safety" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-scout.md" "agent-scout" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-quality.md" "agent-quality" "$planner_model" "$planner_temp" "$planner_reasoning"
-      rebuild_agent_from_template "$target_dir/agents/os-tk-agent-simplify.md" "agent-simplify" "$planner_model" "$planner_temp" "$planner_reasoning"
-      
-      # Scouts (in agents/ dir for Pi)
-      # We need a Pi-specific version of rebuild_reviewer_scouts or adjust it
-      # For now, let's just use the same logic but adjust target_dir
-      PI_SCOUT_DIR="$target_dir/agents"
-      
-      # Manually call scout generation for Pi
-      local scouts_json
-      scouts_json=$(echo "$config" | jq -c '.reviewer.scouts // []')
-      if [[ "$scouts_json" != "[]" ]]; then
-        echo "  - Generating reviewer scouts for Pi..."
-        local count
-        count=$(echo "$scouts_json" | jq '. | length')
-        for ((i=0; i<count; i++)); do
-          local scout role model temp reasoning
-          scout=$(echo "$scouts_json" | jq -c ".[$i]")
-          role=$(echo "$scout" | jq -r '.role')
-          model=$(echo "$scout" | jq -r '.model')
-          temp=$(echo "$scout" | jq -r '.temperature // 0')
-          reasoning=$(echo "$scout" | jq -r '.reasoningEffort // "none"')
-          rebuild_scout_from_template "$PI_SCOUT_DIR/os-tk-reviewer-scout-${role}.md" "$role" "$model" "$temp" "$reasoning"
-          echo "    [ok] os-tk-reviewer-scout-${role}.md"
-        done
-      fi
-      
-      echo "  - $target_dir/agents/os-tk-planner.md (model: $planner_model)"
-      echo "  - $target_dir/agents/os-tk-worker.md (model: $worker_model)"
-      
-      echo "  Note: Models auto-mapped but may require manual adjustment in .pi/agents/*.md"
-      check_pi_subagent_extension
-      ;;
-  esac
-
-  echo ""
 }
 
 # =============================================================================
@@ -1559,10 +1500,10 @@ apply_agent_platform() {
 # =============================================================================
 cmd_init() {
   check_dependencies
-  
+
   local mode="worktree"  # default
   local agents_input="$DEFAULT_AGENTS"
-  
+
   # Parse flags
   while [[ $# -gt 0 ]]; do
     case "$1" in
@@ -1584,7 +1525,7 @@ cmd_init() {
         ;;
     esac
   done
-  
+
   # Validate agents early
   local agents
   agents=$(parse_agents "$agents_input")

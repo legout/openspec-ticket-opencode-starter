@@ -74,14 +74,20 @@ The os-tk workflow is configured via `config.json`. This document explains each 
 **Type:** `string`  
 **Default:** `"legout/openspec-ticket-opencode-starter"`
 
-GitHub repository to sync `opencode/` files from.
+GitHub repository to sync template sources from. Templates are downloaded and rendered to generate platform-specific outputs.
 
 ### `templateRef`
 **Type:** `string`  
-**Default:** `"v0.1.0"`  
+**Default:** `"v0.6.0"`  
 **Valid values:** Any git tag (e.g., `"v1.0.0"`), branch name (e.g., `"main"`), or `"latest"`
 
-Version to sync when running `os-tk sync`. Use `"latest"` to always get the newest release.
+Version tag to sync when running `os-tk sync`.
+
+- Use specific tags (e.g., `"v0.6.0"`) for reproducible builds
+- Use `"latest"` to always get the newest release (not recommended for production)
+- The template system renders platform outputs from these templates
+
+See [template-workflow.md](template-workflow.md) for details on template rendering.
 
 ---
 

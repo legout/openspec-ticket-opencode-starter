@@ -2,6 +2,16 @@
 
 The os-tk workflow supports multiple AI coding agent platforms, allowing teams to use the same spec-driven workflow regardless of their preferred tooling.
 
+## Template-Based Architecture
+
+**All platforms are generated from shared templates** with opencode as the source of truth. Platform-specific variations are handled through:
+
+- **Shared templates** in `templates/shared/` (derived from opencode)
+- **Platform overlays** in `templates/platform/overlays.md` (directory names, frontmatter, checks)
+- **Conditional rendering** using handlebars-style syntax: `{{#opencode}}...{{/opencode}}`
+
+See [template-workflow.md](template-workflow.md) for complete details on the template system.
+
 ---
 
 ## Supported Platforms

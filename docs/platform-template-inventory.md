@@ -1,6 +1,12 @@
 # Platform Template Inventory
 
-This document captures the classification of platform-specific assets into **shared templates** vs **platform-specific overlays**.
+This document captures the classification of platform-specific assets into **shared templates** vs **platform-specific overlays**, as part of the refactor to a **template-based generation system**.
+
+## Source of Truth
+
+**Opencode is the canonical source** for shared workflow semantics. Platform-specific assets are generated from templates derived from opencode content, with platform-specific overlays applied for frontmatter, directory naming, and execution checks.
+
+See [template-workflow.md](template-workflow.md) for details on the template rendering system.
 
 ## Asset Categories
 
