@@ -23,6 +23,29 @@ templates/
     └── overlays.md
 ```
 
+## Files
+
+- templates/platform/overlays.md
+- templates/shared/agent/os-tk-planner.md.template
+- templates/shared/agent/os-tk-worker.md.template
+- templates/shared/agent/os-tk-orchestrator.md.template
+- templates/shared/agent/os-tk-agent-spec.md.template
+- templates/shared/agent/os-tk-agent-design.md.template
+- templates/shared/agent/os-tk-agent-safety.md.template
+- templates/shared/agent/os-tk-agent-scout.md.template
+- templates/shared/agent/os-tk-agent-quality.md.template
+- templates/shared/agent/os-tk-agent-simplify.md.template
+- templates/shared/agent/os-tk-reviewer-lead.md.template
+- templates/shared/agent/os-tk-reviewer-role-spec-audit.md.template
+- templates/shared/agent/os-tk-reviewer-role-bug-footgun.md.template
+- templates/shared/agent/os-tk-reviewer-role-second-opinion.md.template
+- templates/shared/agent/os-tk-reviewer-role-generalist.md.template
+- templates/shared/command/tk-start.md.template
+- templates/shared/skill/openspec/SKILL.md.template
+- templates/shared/skill/ticket/SKILL.md.template
+- templates/shared/skill/tk-frontmatter/SKILL.md.template
+- templates/shared/skill/os-tk-workflow/SKILL.md.template
+
 ## Render Targets
 
 For each template, render outputs to:

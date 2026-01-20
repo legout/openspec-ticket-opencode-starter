@@ -292,79 +292,50 @@ sync_templates() {
 
   echo "Downloading templates from $base_url/templates/..."
 
-  # Create templates directory structure
-  mkdir -p "templates/shared/agent"
-  mkdir -p "templates/shared/command"
-  mkdir -p "templates/shared/skill"
-  mkdir -p "templates/platform"
+  mkdir -p "templates"
 
-  # Download MANIFEST.md (provides validation)
+  # Download MANIFEST.md (provides file list)
   if curl -sSfL "$base_url/templates/MANIFEST.md" -o "templates/MANIFEST.md" 2>/dev/null; then
     echo "  [ok] templates/MANIFEST.md"
   else
-    echo "  [warning] templates/MANIFEST.md not found"
+    echo "  [error] templates/MANIFEST.md not found"
+    return 1
   fi
 
-  # Download platform overlays
-  if curl -sSfL "$base_url/templates/platform/overlays.md" -o "templates/platform/overlays.md" 2>/dev/null; then
-    echo "  [ok] templates/platform/overlays.md"
-  else
-    echo "  [warning] templates/platform/overlays.md not found"
+  local manifest_file="templates/MANIFEST.md"
+  local template_paths=()
+  local in_files_section=0
+
+  while IFS= read -r line; do
+    if [[ "$line" =~ ^##[[:space:]]+Files ]]; then
+      in_files_section=1
+      continue
+    fi
+    if [[ "$line" =~ ^##[[:space:]]+ && $in_files_section -eq 1 ]]; then
+      in_files_section=0
+      continue
+    fi
+    if [[ $in_files_section -eq 1 && "$line" =~ ^-[[:space:]]+(templates/[^[:space:]]+) ]]; then
+      local path="${BASH_REMATCH[1]}"
+      path="${path//$'\r'/}"
+      if [[ "$path" == "templates/MANIFEST.md" ]]; then
+        continue
+      fi
+      template_paths+=("$path")
+    fi
+  done < "$manifest_file"
+
+  if [[ ${#template_paths[@]} -eq 0 ]]; then
+    echo "Error: No template files found in templates/MANIFEST.md (## Files section)" >&2
+    return 1
   fi
 
-  # Download shared agent templates
-  local agent_templates=(
-    "os-tk-planner"
-    "os-tk-worker"
-    "os-tk-orchestrator"
-    "os-tk-agent-spec"
-    "os-tk-agent-design"
-    "os-tk-agent-safety"
-    "os-tk-agent-scout"
-    "os-tk-agent-quality"
-    "os-tk-agent-simplify"
-    "os-tk-reviewer-lead"
-    "os-tk-reviewer-role-spec-audit"
-    "os-tk-reviewer-role-bug-footgun"
-    "os-tk-reviewer-role-second-opinion"
-    "os-tk-reviewer-role-generalist"
-  )
-
-  for tmpl in "${agent_templates[@]}"; do
-    if curl -sSfL "$base_url/templates/shared/agent/${tmpl}.md.template" -o "templates/shared/agent/${tmpl}.md.template" 2>/dev/null; then
-      echo "  [ok] templates/shared/agent/${tmpl}.md.template"
+  for path in "${template_paths[@]}"; do
+    mkdir -p "$(dirname "$path")"
+    if curl -sSfL "$base_url/$path" -o "$path" 2>/dev/null; then
+      echo "  [ok] $path"
     else
-      echo "  [warning] templates/shared/agent/${tmpl}.md.template not found"
-    fi
-  done
-
-  # Download shared command templates
-  local command_templates=(
-    "tk-start"
-  )
-
-  for tmpl in "${command_templates[@]}"; do
-    if curl -sSfL "$base_url/templates/shared/command/${tmpl}.md.template" -o "templates/shared/command/${tmpl}.md.template" 2>/dev/null; then
-      echo "  [ok] templates/shared/command/${tmpl}.md.template"
-    else
-      echo "  [warning] templates/shared/command/${tmpl}.md.template not found"
-    fi
-  done
-
-  # Download shared skill templates
-  local skill_dirs=(
-    "openspec"
-    "tk-frontmatter"
-    "ticket"
-    "os-tk-workflow"
-  )
-
-  for skill_dir in "${skill_dirs[@]}"; do
-    mkdir -p "templates/shared/skill/${skill_dir}"
-    if curl -sSfL "$base_url/templates/shared/skill/${skill_dir}/SKILL.md.template" -o "templates/shared/skill/${skill_dir}/SKILL.md.template" 2>/dev/null; then
-      echo "  [ok] templates/shared/skill/${skill_dir}/SKILL.md.template"
-    else
-      echo "  [warning] templates/shared/skill/${skill_dir}/SKILL.md.template not found"
+      echo "  [warning] $path not found"
     fi
   done
 
