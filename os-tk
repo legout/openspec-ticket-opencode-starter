@@ -56,67 +56,6 @@ check_dependencies() {
 default_config() {
   local ref="${1:-$VERSION}"
   local agents="${2:-opencode}"
-  
-  local roles_block=""
-  local reviewer_policy_block=""
-  local auto_rerun_block=""
-  local reviewer_policy_block=""
-  local auto_rerun_block=""
-
-  # Multi-model review is OpenCode exclusive
-  if [[ ",$agents," == *",opencode,"* ]]; then
-    scouts_block='
-    "scouts": [
-      { "role": "spec-audit", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high", "temperature": 0 },
-      { "role": "shallow-bugs", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high", "temperature": 0 },
-      { "role": "history-context", "model": "google/antigravity-claude-opus-4-5-thinking", "reasoningEffort": "max", "temperature": 0 },
-      { "role": "code-comments", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high", "temperature": 0 },
-      { "role": "intentional-check", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high", "temperature": 0 },
-      { "role": "fast-sanity", "model": "opencode/grok-fast", "reasoningEffort": "none", "temperature": 0 },
-      { "role": "second-opinion", "model": "minimax/MiniMax-M2.1", "reasoningEffort": "none", "temperature": 0 }
-    ],'
-    adaptive_block='
-    "adaptive": {
-      "enabled": true,
-      "maxParallelScouts": 3,
-      "thresholds": {
-        "small":  { "maxFiles": 4,  "maxChangedLines": 200 },
-        "medium": { "maxFiles": 12, "maxChangedLines": 800 }
-      },
-      "defaults": {
-        "small":  ["shallow-bugs", "spec-audit"],
-        "medium": ["shallow-bugs", "spec-audit", "history-context"],
-        "large":  ["shallow-bugs", "spec-audit", "history-context", "code-comments", "intentional-check", "fast-sanity", "second-opinion"]
-      }
-    },'
-    agg_strong_block='
-    "aggregatorStrong": {
-      "model": "openai/gpt-5.2",
-      "reasoningEffort": "medium",
-      "temperature": 0
-    }'
-  fi
-
-  # Clean up trailing commas if blocks are omitted
-  if [[ -z "$agg_strong_block" ]]; then
-    # If agg_strong is omitted, the previous line (skipTags) needs to lose its comma
-    # but since we're building the JSON here, we'll just structure it carefully.
-    local reviewer_core='
-    "autoTrigger": false,
-    "categories": ["spec-compliance", "tests", "security", "quality"],
-    "requireSeverity": ["error"],
-    "requireConfidence": 80,
-    "hybridFiltering": true,
-    "skipTags": ["no-review", "wip"]'
-  else
-    local reviewer_core='
-    "autoTrigger": false,
-    "categories": ["spec-compliance", "tests", "security", "quality"],
-    "requireSeverity": ["error"],
-    "requireConfidence": 80,
-    "hybridFiltering": true,
-    "skipTags": ["no-review", "wip"],'
-  fi
 
   cat << JSON
 {
@@ -143,7 +82,41 @@ default_config() {
     "reasoningEffort": "none",
     "temperature": 0.2
   },
-  "reviewer": {${reviewer_core}${scouts_block}${adaptive_block}${agg_strong_block}
+  "reviewer": {
+    "autoTrigger": false,
+    "policy": "gate",
+    "blockSeverities": ["error"],
+    "blockMinConfidence": 80,
+    "followupSeverities": ["warning"],
+    "followupMinConfidence": 60,
+    "skipTags": ["no-review", "wip"],
+    "autoRerunOnDone": false,
+    "roles": {
+      "bug-footgun": {
+        "enabled": true,
+        "model": "openai/gpt-5.2-codex",
+        "reasoningEffort": "high",
+        "temperature": 0
+      },
+      "spec-audit": {
+        "enabled": true,
+        "model": "openai/gpt-5.2-codex",
+        "reasoningEffort": "high",
+        "temperature": 0
+      },
+      "generalist": {
+        "enabled": true,
+        "model": "openai/gpt-5.2",
+        "reasoningEffort": "medium",
+        "temperature": 0
+      },
+      "second-opinion": {
+        "enabled": true,
+        "model": "anthropic/opus-4.5",
+        "reasoningEffort": "max",
+        "temperature": 0
+      }
+    }
   }
 }
 JSON
@@ -429,32 +402,7 @@ render_to_platform() {
     fi
   done
 
-  # For opencode platform, generate reviewer scouts from config
-  if [[ "$platform" == "opencode" ]]; then
-    rebuild_reviewer_scouts "$target_dir" "$config"
-  fi
-
-  # For pi platform, generate scouts in agents/ dir
-  if [[ "$platform" == "pi" ]]; then
-    local scouts_json
-    scouts_json=$(echo "$config" | jq -c '.reviewer.scouts // []')
-    if [[ "$scouts_json" != "[]" ]]; then
-      echo "  - Generating reviewer scouts for Pi..."
-      local count
-      count=$(echo "$scouts_json" | jq '. | length')
-      for ((i=0; i<count; i++)); do
-        local scout role model temp reasoning
-        scout=$(echo "$scouts_json" | jq -c ".[$i]")
-        role=$(echo "$scout" | jq -r '.role')
-        model=$(echo "$scout" | jq -r '.model')
-        temp=$(echo "$scout" | jq -r '.temperature // 0')
-        reasoning=$(echo "$scout" | jq -r '.reasoningEffort // "none"')
-        rebuild_scout_from_template "$target_dir/$agent_dir/os-tk-reviewer-scout-${role}.md" "$role" "$model" "$temp" "$reasoning"
-        echo "    [ok] os-tk-reviewer-scout-${role}.md"
-        ((rendered++)) || true
-      done
-    fi
-  fi
+  render_platform_templates "$platform" "$target_dir" "$agent_dir" "$command_dir" "$skill_dir" rendered failed
 
   echo "Rendered $rendered files for $platform"
   if [[ $failed -gt 0 ]]; then
@@ -463,6 +411,71 @@ render_to_platform() {
   fi
 
   return 0
+}
+
+render_platform_templates() {
+  local platform="$1"
+  local target_dir="$2"
+  local agent_dir="$3"
+  local command_dir="$4"
+  local skill_dir="$5"
+  local -n rendered_ref="$6"
+  local -n failed_ref="$7"
+
+  local platform_root="templates/platform/${platform}"
+  if [[ ! -d "$platform_root" ]]; then
+    return 0
+  fi
+
+  shopt -s nullglob
+
+  for template_file in "$platform_root/agent/"*.md.template; do
+    local basename
+    basename=$(basename "$template_file" .template)
+    local output_file="$target_dir/$agent_dir/$basename"
+    if render_template "$template_file" "$platform" > "$output_file"; then
+      echo "  [ok] $output_file"
+      ((rendered_ref++)) || true
+    else
+      echo "  [FAIL] $output_file"
+      ((failed_ref++)) || true
+    fi
+  done
+
+  for template_file in "$platform_root/command/"*.md.template; do
+    local basename
+    basename=$(basename "$template_file" .template)
+    local output_file="$target_dir/$command_dir/$basename"
+    if render_template "$template_file" "$platform" > "$output_file"; then
+      echo "  [ok] $output_file"
+      ((rendered_ref++)) || true
+    else
+      echo "  [FAIL] $output_file"
+      ((failed_ref++)) || true
+    fi
+  done
+
+  for skill_dir_template in "$platform_root/skill/"*/; do
+    local skill_name
+    skill_name=$(basename "$skill_dir_template")
+    local output_skill_dir="$target_dir/$skill_dir/$skill_name"
+    mkdir -p "$output_skill_dir"
+
+    for template_file in "$skill_dir_template"*.md.template; do
+      local basename
+      basename=$(basename "$template_file" .template)
+      local output_file="$output_skill_dir/$basename"
+      if render_template "$template_file" "$platform" > "$output_file"; then
+        echo "  [ok] $output_file"
+        ((rendered_ref++)) || true
+      else
+        echo "  [FAIL] $output_file"
+        ((failed_ref++)) || true
+      fi
+    done
+  done
+
+  shopt -u nullglob
 }
 
 # Default agent platforms (comma-separated)
@@ -573,9 +586,54 @@ cmd_sync() {
 
   echo "Sync complete."
 
+  warn_missing_templates
+
   # Also update AGENTS.md block
   echo ""
   update_agents_md
+}
+
+warn_missing_templates() {
+  if [[ ! -d "opencode" ]]; then
+    return 0
+  fi
+
+  local missing=0
+  shopt -s nullglob
+
+  for file in opencode/command/*.md; do
+    local name
+    name=$(basename "$file")
+    if [[ ! -f "templates/shared/command/${name}.template" && ! -f "templates/platform/opencode/command/${name}.template" ]]; then
+      echo "Warning: Missing command template for $file" >&2
+      missing=1
+    fi
+  done
+
+  for file in opencode/agent/*.md; do
+    local name
+    name=$(basename "$file")
+    if [[ ! -f "templates/shared/agent/${name}.template" && ! -f "templates/platform/opencode/agent/${name}.template" ]]; then
+      echo "Warning: Missing agent template for $file" >&2
+      missing=1
+    fi
+  done
+
+  for file in opencode/skill/*/SKILL.md; do
+    local skill_dir
+    skill_dir=$(dirname "$file")
+    skill_dir=$(basename "$skill_dir")
+    if [[ ! -f "templates/shared/skill/${skill_dir}/SKILL.md.template" && ! -f "templates/platform/opencode/skill/${skill_dir}/SKILL.md.template" ]]; then
+      echo "Warning: Missing skill template for $file" >&2
+      missing=1
+    fi
+  done
+
+  shopt -u nullglob
+
+  if [[ $missing -eq 0 ]]; then
+    return 0
+  fi
 }
 
 # =============================================================================

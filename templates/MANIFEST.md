@@ -40,6 +40,15 @@ templates/
 - templates/shared/agent/os-tk-reviewer-role-bug-footgun.md.template
 - templates/shared/agent/os-tk-reviewer-role-second-opinion.md.template
 - templates/shared/agent/os-tk-reviewer-role-generalist.md.template
+- templates/shared/command/os-breakdown.md.template
+- templates/shared/command/os-change.md.template
+- templates/shared/command/os-proposal.md.template
+- templates/shared/command/tk-bootstrap.md.template
+- templates/shared/command/tk-done.md.template
+- templates/shared/command/tk-queue.md.template
+- templates/shared/command/tk-refactor.md.template
+- templates/shared/command/tk-review.md.template
+- templates/shared/command/tk-run.md.template
 - templates/shared/command/tk-start.md.template
 - templates/shared/skill/openspec/SKILL.md.template
 - templates/shared/skill/ticket/SKILL.md.template
