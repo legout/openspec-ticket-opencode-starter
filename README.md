@@ -147,13 +147,18 @@ After running `os-tk init`, configuration is stored in `config.json`.
   "reviewer": {
     "autoTrigger": false,
     "categories": ["spec-compliance", "tests", "security", "quality"],
-    "createTicketsFor": ["error"],
+    "requireSeverity": ["error"],
+    "requireConfidence": 80,
+    "hybridFiltering": true,
     "skipTags": ["no-review", "wip"],
     "scouts": [
-      { "id": "opus45", "model": "google/antigravity-claude-opus-4-5-thinking", "reasoningEffort": "max" },
-      { "id": "gpt52",  "model": "openai/gpt-5.2-codex", "reasoningEffort": "high" },
-      { "id": "mini",   "model": "openai/gpt-5.1-codex-mini", "reasoningEffort": "high" },
-      { "id": "grok",   "model": "opencode/grok-fast" }
+      { "role": "spec-audit", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high" },
+      { "role": "shallow-bugs", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high" },
+      { "role": "history-context", "model": "google/antigravity-claude-opus-4-5-thinking", "reasoningEffort": "max" },
+      { "role": "code-comments", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high" },
+      { "role": "intentional-check", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high" },
+      { "role": "fast-sanity", "model": "opencode/grok-fast", "reasoningEffort": "none" },
+      { "role": "second-opinion", "model": "minimax/MiniMax-M2.1", "reasoningEffort": "none" }
     ],
     "adaptive": { "enabled": true },
     "aggregatorStrong": { "model": "openai/gpt-5.2", "reasoningEffort": "medium" }
@@ -169,7 +174,7 @@ After running `os-tk init`, configuration is stored in `config.json`.
 | `useWorktrees` | `true` for safe parallel (isolated branches), `false` for simple mode |
 | `planner.model` | Model for planning/view-only commands |
 | `worker.model` | Model for implementation commands |
-| `reviewer.scouts` | List of models for parallel review scouting (OpenCode only) |
+| `reviewer.scouts` | Role-based list of models for parallel review scouting (OpenCode only) |
 | `reviewer.adaptive` | Enable adaptive (complexity-based) review (OpenCode only) |
 | `reviewer.autoTrigger` | `false` (manual /tk-review) or `true` (auto after /tk-done) |
 
@@ -196,6 +201,7 @@ config.json              # Project config (commit this)
 .opencode/
   agent/
     os-tk-planner.md       # Planning + orchestration agent
+    os-tk-orchestrator.md  # Queue + bootstrap (metadata edits only)
     os-tk-worker.md        # Implementation agent
     os-tk-reviewer.md      # Code review agent
   command/
@@ -215,13 +221,13 @@ config.json              # Project config (commit this)
 
 # Claude Code (--agent claude)
 .claude/
-  agents/os-tk-planner.md, os-tk-worker.md, os-tk-reviewer.md
+  agents/os-tk-planner.md, os-tk-orchestrator.md, os-tk-worker.md, os-tk-reviewer.md
   commands/os-breakdown.md, os-change.md, os-proposal.md, tk-bootstrap.md, ...
   skills/openspec/, ticket/, os-tk-workflow/
 
 # Factory/Droid (--agent factory)
 .factory/
-  droids/os-tk-planner.md, os-tk-worker.md, os-tk-reviewer.md
+  droids/os-tk-planner.md, os-tk-orchestrator.md, os-tk-worker.md, os-tk-reviewer.md
   commands/os-breakdown.md, os-change.md, os-proposal.md, tk-bootstrap.md, ...
   skills/openspec/, ticket/, os-tk-workflow/
 
@@ -299,11 +305,11 @@ When all tasks are complete, `/tk-done` auto-archives the OpenSpec change.
 | `/os-proposal <id>` | Create a new OpenSpec proposal |
 | `/os-change [id]` | Show active changes or details for one change |
 | `/tk-bootstrap <id> "<title>" [--yes]` | Design epic + 3-8 chunky tasks (preview by default, `--yes` to execute) |
-| `/tk-queue [next\|all\|<change-id>]` | Show ready/blocked tickets |
+| `/tk-queue [--next\|--all\|--change <change-id>]` | Show ready/blocked tickets |
 | `/tk-start <id...> [--parallel N]` | Start ticket(s) and implement |
 | `/tk-done <id> [change-id]` | Close ticket, sync progress, merge, push |
 | `/tk-review <id>` | Review completed ticket, create fix tickets if needed |
-| `/tk-run [--all] [--max-cycles N]` | Autonomous loop: start → done → review → repeat |
+| `/tk-run [<ticket-id>] [--epic <epic-id>] [--ralph] [--max-cycles N]` | Autonomous loop: start → done → review → repeat |
 | `/tk-refactor` | Merge duplicates, clean up backlog |
 
 ---

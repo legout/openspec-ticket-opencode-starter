@@ -20,11 +20,11 @@ This repo uses OpenSpec for spec-driven changes and tk for task execution tracki
 | `/os-proposal <id>` | Create/update OpenSpec change files |
 | `/os-change [id]` | View change status (view-only) |
 | `/tk-bootstrap <change-id> "<title>"` | Create tk epic + tasks from OpenSpec change |
-| `/tk-queue [next\|all\|<change-id>]` | Show ready/blocked tickets (view-only) |
+| `/tk-queue [--next\|--all\|--change <change-id>]` | Show ready/blocked tickets (queue management) |
 | `/tk-start <id...> [--parallel N]` | Start ticket(s) and implement |
 | `/tk-done <id> [change-id]` | Close + sync + archive + merge + push |
 | `/tk-review <id>` | Review completed ticket, create fix tickets if needed |
-| `/tk-run [--all] [--max-cycles N]` | Autonomous loop: start → done → review → repeat |
+| `/tk-run [<ticket-id>] [--epic <epic-id>] [--ralph] [--max-cycles N]` | Autonomous loop: start → done → review → repeat |
 | `/tk-refactor` | Merge duplicates, clean up backlog (optional) |
 
 ## Specialized Advisors (Advise-only)
@@ -45,17 +45,21 @@ Call these agents manually to get expert guidance at any stage. They can researc
 - `/tk-review <id>` analyzes merge commits against OpenSpec specs
 - Creates linked fix tickets (non-blocking) for issues found
 - **Global-style flags** (OpenCode multi-model mode):
-  - `--ultimate`: Run all 4 role-based scouts (fast-sanity, standard, deep, second-opinion) + STRONG aggregator
-  - `--fast`: Run only fast-sanity role scout
-  - `--standard`: Run only standard role scout (default)
-  - `--deep`: Run only deep role scout
-  - `--seco`: Run only second-opinion role scout
-  - `--scouts ID,ID`: Manual scout selection (highest precedence)
+  - `--ultimate`: Run all 7 role-based scouts + STRONG aggregator
+  - `--standard`: Run default set (shallow-bugs, spec-audit)
+  - `--spec-audit`: Run spec-audit only
+  - `--shallow-bugs` (alias `--fast`): Run shallow-bugs only
+  - `--history-context` (alias `--deep`): Run history-context only
+  - `--code-comments`: Run code-comments only
+  - `--intentional-check`: Run intentional-check only
+  - `--fast-sanity`: Run fast-sanity only
+  - `--second-opinion` (alias `--seco`): Run second-opinion only
+  - `--scouts ROLE,ROLE`: Manual role selection (highest precedence)
   - `--working-tree`: Review unmerged changes against base ref
   - `--base <ref>`: Base ref for working-tree mode
 - Flag precedence: `--scouts` > reviewer flags > adaptive defaults
 - One reviewer per role enforced by `os-tk apply` validation
-- Configure scouts and models via `reviewer.scouts[]` in `config.json`
+- Configure scouts and models via role-based `reviewer.scouts[]` in `config.json`
 - `/tk-run` enables fully autonomous operation (Ralph mode)
 
 ## Parallel Execution
@@ -64,4 +68,17 @@ Call these agents manually to get expert guidance at any stage. They can researc
 - **Simple mode** (`useWorktrees: false`): Single working tree; parallel only if `unsafe.allowParallel: true`.
 
 Configure via `config.json`. Initialize with `os-tk init`.
+
+## File-Aware Dependency Management
+
+Tickets can include file predictions in their frontmatter:
+
+```yaml
+files-modify:
+  - src/api.ts
+files-create:
+  - src/types/User.ts
+```
+
+`/tk-queue --all` detects overlaps and adds `tk dep` relationships to serialize conflicting work.
 <!-- OS-TK-END -->

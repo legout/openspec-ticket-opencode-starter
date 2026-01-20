@@ -114,8 +114,8 @@ User Intent → Planning → Execution → Archive
 | `/os-change` | planner | View OpenSpec changes (read-only) |
 | `/os-proposal` | worker | Create proposal files |
 | `/os-breakdown` | planner | Analyze PRD, create multiple proposals |
-| `/tk-bootstrap` | planner | Design + create tickets |
-| `/tk-queue` | planner | View ready/blocked (read-only) |
+| `/tk-bootstrap` | orchestrator | Design + create tickets |
+| `/tk-queue` | orchestrator | Queue management + file-aware deps |
 | `/tk-start` | worker | Implement ticket |
 | `/tk-done` | worker | Close, sync, merge, push |
 | `/tk-review` | reviewer | Post-implementation review |
@@ -223,6 +223,37 @@ files-create: [src/types/User.ts]
 ```
 
 `/tk-queue --all` auto-creates dependencies to prevent overlapping file modifications.
+
+## /tk-review Workflow
+
+Use this to route reviews without duplicating logic in command files.
+
+1. **Validate**: ensure ticket is closed; skip if tag in `reviewer.skipTags`.
+2. **Diff source**:
+   - Default: merge commit diff for `<ticket-id>`.
+   - `--working-tree`: `git diff $(git merge-base <baseRef> HEAD)`.
+3. **Risk + size**: compute changed files/lines and risk keywords.
+4. **Select scouts**:
+   - Apply flag precedence (`--scouts` > role flags > provider flags > `--ultimate` > adaptive).
+5. **Choose aggregator**: FAST or STRONG (adaptive or forced).
+6. **Delegate**: `/tk-review-fast` or `/tk-review-strong` with `--scouts <roles>` and pass-through flags.
+
+Aggregators are the only writers (`tk add-note`, `tk create`, `tk link`).
+
+## /tk-run Workflow
+
+Use this for autonomous execution loops.
+
+1. **Mode**:
+   - Single ticket: run once.
+   - `--epic`: loop until all tickets under epic closed.
+   - `--ralph`: loop until `tk ready` is empty.
+2. **Cycle**:
+   - Select next ready ticket.
+   - `/tk-start <id>` → `/tk-done <id>` → `/tk-review <id>` (if `reviewer.autoTrigger`).
+3. **Exit**:
+   - Stop at `--max-cycles`.
+   - Stop on P0 fix ticket creation.
 
 ## Troubleshooting
 

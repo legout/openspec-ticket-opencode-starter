@@ -85,7 +85,17 @@ Design the dependencies:
 
 ---
 
-## Step 4: Generate Commands
+## Step 4: Predict file changes
+
+For each ticket, predict:
+- `files-modify`: Existing files likely to be changed
+- `files-create`: New files likely to be created
+
+Use conservative predictions. If uncertain, include broader paths to reduce conflict risk.
+
+---
+
+## Step 5: Generate Commands
 
 Create the exact commands that will be run:
 
@@ -97,6 +107,9 @@ tk create --type epic --external-ref "openspec:$1" --title "$2"
 **Task creation (for each task):**
 ```bash
 tk create --type task --parent <epic-id> --title "<task title>" --acceptance "<measurable done criteria>"
+# Include frontmatter fields:
+# files-modify: [path1, path2]
+# files-create: [path3]
 ```
 
 **Dependencies (if any):**
@@ -104,9 +117,12 @@ tk create --type task --parent <epic-id> --title "<task title>" --acceptance "<m
 tk dep <blocked-id> <blocker-id>
 ```
 
+If `tk create` cannot set frontmatter, edit the created ticket file in `.tickets/<id>.md` to add `files-modify` / `files-create`.
+Use the **tk-frontmatter** skill when editing ticket frontmatter.
+
 ---
 
-## Step 5: Preview or Execute
+## Step 6: Preview or Execute
 
 ### If Preview Mode (no `--yes`):
 

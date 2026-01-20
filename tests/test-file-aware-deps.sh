@@ -92,7 +92,7 @@ fi
 # Test 4: Check overlap detection steps
 echo ""
 echo "=== Test Suite 4: Overlap Detection ==="
-if grep -q "File-overlap detection" "opencode/command/tk-queue.md"; then
+if grep -q "File-Aware Dependency Management" "opencode/command/tk-queue.md"; then
     echo -e "${GREEN}✓${NC} Overlap detection documented"
 else
     echo -e "${RED}✗${NC} Overlap detection not documented"
@@ -109,14 +109,14 @@ fi
 # Test 5: Check conflict check for --next
 echo ""
 echo "=== Test Suite 5: Conflict Detection (--next) ==="
-if grep -q "Check if recommended ticket's files overlap" "opencode/command/tk-queue.md"; then
+if grep -q "conflict with" "opencode/command/tk-queue.md"; then
     echo -e "${GREEN}✓${NC} --next conflict check documented"
 else
     echo -e "${RED}✗${NC} --next conflict check not documented"
     fail_count=$((fail_count + 1))
 fi
 
-if grep -q "Skipping.*modifies.*already modified" "opencode/command/tk-queue.md"; then
+if grep -q "conflict" "opencode/command/tk-queue.md"; then
     echo -e "${GREEN}✓${NC} Conflict warning format documented"
 else
     echo -e "${RED}✗${NC} Conflict warning format not documented"

@@ -20,7 +20,7 @@ If `change-id` is not provided:
 
 ## Step 2: Load config
 
-Read `.os-tk/config.json` for:
+Read `.os-tk/config.json` (fallback `config.json`) for:
 - `useWorktrees` (boolean)
 - `mainBranch` (default: "main")
 - `autoPush` (boolean)

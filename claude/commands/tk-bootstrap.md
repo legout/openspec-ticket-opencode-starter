@@ -1,7 +1,7 @@
 ---
 description: Design and create tk epic + 3-8 chunky task tickets
 argument-hint: <change-id> "<epic-title>" [--yes]
-allowed-tools: Bash(tk:*), Bash(openspec:*), Read, Grep, Glob
+allowed-tools: Bash(tk:*), Bash(openspec:*), Read, Grep, Glob, Edit, Write
 ---
 
 # /tk-bootstrap $1 $2 [--yes]
@@ -36,10 +36,16 @@ tk create --type epic --external-ref "openspec:$1" --title "$2"
 
 # Create tasks (capture epic ID first)
 tk create --type task --parent <epic-id> --title "<task>" --acceptance "<criteria>"
+# Include frontmatter fields:
+# files-modify: [path1, path2]
+# files-create: [path3]
 
 # Add dependencies
 tk dep <blocked-id> <blocker-id>
 ```
+
+If `tk create` cannot set frontmatter, edit the created ticket file in `.tickets/<id>.md` to add `files-modify` / `files-create`.
+Use the **tk-frontmatter** skill when editing ticket frontmatter.
 
 ## Ticket Design Guidelines
 
@@ -51,6 +57,10 @@ Create 3-8 chunky tickets covering:
 | Frontend | "User management UI" |
 | Tests | "E2E tests for user workflows" |
 | Docs | "API documentation" |
+
+## File Predictions
+
+For each task, predict likely `files-modify` and `files-create` values. Use conservative guesses to avoid conflicts.
 
 ## Output Format
 

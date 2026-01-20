@@ -15,7 +15,7 @@ Check if the `subagent` extension is installed by checking for the `subagent` to
 
 ## Step 1: Load config
 
-Read `.os-tk/config.json` for:
+Read `.os-tk/config.json` (fallback `config.json`) for:
 - `useWorktrees` (boolean)
 - `worktreeDir` (default: ".worktrees")
 - `defaultParallel` (default: 3)
@@ -49,7 +49,7 @@ If `useWorktrees: true`:
   - If `false`: STOP with message:
     ```
     Parallel execution in a single working tree is disabled.
-    Enable it in .os-tk/config.json: unsafe.allowParallel = true
+    Enable it in .os-tk/config.json (or config.json): unsafe.allowParallel = true
     Or enable worktrees: useWorktrees = true
     ```
   - If `true`: Print warning and proceed:

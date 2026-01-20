@@ -1,60 +1,23 @@
 ---
-description: Break down a PRD/plan into OpenSpec proposals
+description: Break down a PRD/plan into OpenSpec proposals (skill-driven)
 argument-hint: <source> [--with-tickets]
 ---
 
 # /os-breakdown
 
-**Arguments:** $ARGUMENTS
+Use the **openspec** skill section “/os-breakdown Workflow” for the full process.
 
-Parse from $ARGUMENTS:
-- `source`: Required. One of:
-  - `@file.md` - A file reference
-  - `@folder/` - A folder with plan documents
-  - `https://...` - A URL to fetch
-  - Inline text - A brief description
-- `--with-tickets`: Auto-bootstrap tickets after creating proposals
+**Arguments:** $ARGUMENTS  
+Parse `source` (file/folder/URL/inline) and optional `--with-tickets`.
 
-## Steps
+## Contract (brief)
+**ALLOWED:** Read sources, create OpenSpec change files, call `/tk-bootstrap` if `--with-tickets`.  
+**FORBIDDEN:** Implement code or modify specs outside `openspec/changes/`.
 
-1. **Ingest source material**: Read file, folder, URL, or inline text
+## Steps (thin wrapper)
+1. Ingest the source.
+2. Follow the **openspec** skill workflow to draft proposals + tasks.
+3. Validate with `openspec validate <id> --strict`.
+4. If `--with-tickets`, run `/tk-bootstrap <id> "<title>" --yes`.
 
-2. **Deep analysis**:
-   - Identify distinct features/components
-   - Extract requirements and constraints
-   - Capture context and rationale
-
-3. **Plan proposal structure**:
-   - Group into 3-10 feature-level proposals
-   - Name with kebab-case IDs
-   - Document relationships
-
-4. **Create proposals**:
-   For each feature: `openspec init <id>` + create files
-
-5. **Bootstrap tickets** (if `--with-tickets`):
-   For each proposal: `/tk-bootstrap <id> "<title>" --yes`
-
-## Output Format
-
-```
-## Breakdown Complete
-
-### Proposals Created
-| ID | Title | Tasks |
-|----|-------|-------|
-| <id> | <title> | N |
-
-### Implementation Order
-1. <id> - <rationale>
-2. <id> - <rationale>
-
-### Next Steps
-- Review proposals in `openspec/changes/`
-- Run `/tk-bootstrap <id> "<title>"` for each
-```
-
-## Contract
-
-**ALLOWED:** Reading files, `openspec init`, creating spec files
-**FORBIDDEN:** Implementing code, skipping proposals
+STOP after proposal creation. Await user approval before implementation.

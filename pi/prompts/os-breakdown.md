@@ -1,13 +1,18 @@
 ---
-description: Analyze a PRD/plan and break it down into multiple OpenSpec proposals
+description: Break down a PRD/plan into OpenSpec proposals (skill-driven)
 ---
 
 # /os-breakdown <source> [--with-tickets]
 
-**Arguments:** $ARGUMENTS
+Use the **openspec** skill section “/os-breakdown Workflow” for the full process.
 
-1) Read the source document ($1).
-2) Analyze the features and scope.
-3) Use your **openspec** skill to design multiple small, focused proposals.
-4) If `--with-tickets` is present, also design the initial ticket structure for each.
-5) Summarize the breakdown and suggest commands to create them.
+**Arguments:** $ARGUMENTS  
+Parse `source` (file/folder/URL/inline) and optional `--with-tickets`.
+
+## Steps (thin wrapper)
+1) Ingest the source.
+2) Follow the **openspec** skill workflow to draft proposals + tasks.
+3) Validate with `openspec validate <id> --strict`.
+4) If `--with-tickets`, run `/tk-bootstrap <id> "<title>" --yes`.
+
+STOP after proposal creation. Await user approval before implementation.

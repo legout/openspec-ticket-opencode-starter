@@ -13,7 +13,7 @@ Parse from $ARGUMENTS:
 
 ## Steps
 
-1. **Load config** from `.os-tk/config.json`
+1. **Load config** from `.os-tk/config.json` (fallback `config.json`)
 2. **Validate tickets are ready**: Run `tk ready`
 3. **Set up execution context** (worktree if enabled)
 4. **Mark as in-progress**: `tk start <id>`

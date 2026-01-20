@@ -1,6 +1,6 @@
 {
   "templateRepo": "legout/openspec-ticket-opencode-starter",
-  "templateRef": "v0.1.0",
+  "templateRef": "v0.6.0",
   "useWorktrees": true,
   "worktreeDir": ".worktrees",
   "defaultParallel": 3,
@@ -18,95 +18,44 @@
   },
   "worker": {
     "model": "zai-coding-plan/glm-4.7",
-    "fallbackModels": [
-      "minimax/MiniMax-M2.1"
-    ],
+    "fallbackModels": ["minimax/MiniMax-M2.1"],
     "reasoningEffort": "none",
     "temperature": 0.75
   },
   "reviewer": {
     "autoTrigger": false,
-    "categories": [
-      "spec-compliance",
-      "tests",
-      "security",
-      "quality"
-    ],
-    "confidenceThreshold": 80,
-    "hybridFiltering": true,
-    "requireSeverity": ["error"],
-    "requireConfidence": 80,
-    "skipTags": [
-      "no-review",
-      "wip"
-    ],
-    "scouts": [
-      {
-        "role": "spec-audit",
+    "policy": "gate",
+    "blockSeverities": ["error"],
+    "blockMinConfidence": 80,
+    "followupSeverities": ["warning"],
+    "followupMinConfidence": 60,
+    "skipTags": ["no-review", "wip"],
+    "autoRerunOnDone": false,
+    "roles": {
+      "bug-footgun": {
+        "enabled": true,
         "model": "openai/gpt-5.2-codex",
         "reasoningEffort": "high",
         "temperature": 0
       },
-      {
-        "role": "shallow-bugs",
+      "spec-audit": {
+        "enabled": true,
         "model": "openai/gpt-5.2-codex",
         "reasoningEffort": "high",
         "temperature": 0
       },
-      {
-        "role": "history-context",
-        "model": "google/antigravity-claude-opus-4-5-thinking",
+      "generalist": {
+        "enabled": true,
+        "model": "openai/gpt-5.2",
+        "reasoningEffort": "medium",
+        "temperature": 0
+      },
+      "second-opinion": {
+        "enabled": true,
+        "model": "anthropic/opus-4.5",
         "reasoningEffort": "max",
         "temperature": 0
-      },
-      {
-        "role": "code-comments",
-        "model": "openai/gpt-5.2-codex",
-        "reasoningEffort": "high",
-        "temperature": 0
-      },
-      {
-        "role": "intentional-check",
-        "model": "openai/gpt-5.2-codex",
-        "reasoningEffort": "high",
-        "temperature": 0
-      },
-      {
-        "role": "fast-sanity",
-        "model": "opencode/grok-fast",
-        "reasoningEffort": "none",
-        "temperature": 0
-      },
-      {
-        "role": "second-opinion",
-        "model": "minimax/MiniMax-M2.1",
-        "reasoningEffort": "none",
-        "temperature": 0
       }
-    ],
-    "adaptive": {
-      "enabled": true,
-      "maxParallelScouts": 3,
-      "thresholds": {
-        "small": {
-          "maxFiles": 4,
-          "maxChangedLines": 200
-        },
-        "medium": {
-          "maxFiles": 12,
-          "maxChangedLines": 800
-        }
-      },
-      "defaults": {
-        "small": ["shallow-bugs", "spec-audit"],
-        "medium": ["shallow-bugs", "spec-audit", "history-context"],
-        "large": ["shallow-bugs", "spec-audit", "history-context", "code-comments", "intentional-check", "fast-sanity", "second-opinion"]
-      }
-    },
-    "aggregatorStrong": {
-      "model": "openai/gpt-5.2",
-      "reasoningEffort": "medium",
-      "temperature": 0
     }
   },
   "agents": "opencode,claude,factory,pi"

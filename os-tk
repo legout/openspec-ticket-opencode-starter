@@ -17,7 +17,7 @@ set -euo pipefail
 # =============================================================================
 # VERSION (single source of truth)
 # =============================================================================
-VERSION="0.5.0"
+VERSION="0.6.0"
 
 # =============================================================================
 # PATHS
@@ -57,18 +57,23 @@ default_config() {
   local ref="${1:-$VERSION}"
   local agents="${2:-opencode}"
   
-  local scouts_block=""
-  local adaptive_block=""
-  local agg_strong_block=""
+  local roles_block=""
+  local reviewer_policy_block=""
+  local auto_rerun_block=""
+  local reviewer_policy_block=""
+  local auto_rerun_block=""
 
   # Multi-model review is OpenCode exclusive
   if [[ ",$agents," == *",opencode,"* ]]; then
     scouts_block='
     "scouts": [
-      { "id": "opus45", "model": "google/antigravity-claude-opus-4-5-thinking", "reasoningEffort": "max", "temperature": 0 },
-      { "id": "gpt52",  "model": "openai/gpt-5.2-codex", "reasoningEffort": "high", "temperature": 0 },
-      { "id": "mini",   "model": "openai/gpt-5.1-codex-mini", "reasoningEffort": "high", "temperature": 0 },
-      { "id": "grok",   "model": "opencode/grok-fast", "reasoningEffort": "none", "temperature": 0 }
+      { "role": "spec-audit", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high", "temperature": 0 },
+      { "role": "shallow-bugs", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high", "temperature": 0 },
+      { "role": "history-context", "model": "google/antigravity-claude-opus-4-5-thinking", "reasoningEffort": "max", "temperature": 0 },
+      { "role": "code-comments", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high", "temperature": 0 },
+      { "role": "intentional-check", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high", "temperature": 0 },
+      { "role": "fast-sanity", "model": "opencode/grok-fast", "reasoningEffort": "none", "temperature": 0 },
+      { "role": "second-opinion", "model": "minimax/MiniMax-M2.1", "reasoningEffort": "none", "temperature": 0 }
     ],'
     adaptive_block='
     "adaptive": {
@@ -79,9 +84,9 @@ default_config() {
         "medium": { "maxFiles": 12, "maxChangedLines": 800 }
       },
       "defaults": {
-        "small":  ["grok", "mini"],
-        "medium": ["grok", "gpt52"],
-        "large":  ["grok", "gpt52", "opus45"]
+        "small":  ["shallow-bugs", "spec-audit"],
+        "medium": ["shallow-bugs", "spec-audit", "history-context"],
+        "large":  ["shallow-bugs", "spec-audit", "history-context", "code-comments", "intentional-check", "fast-sanity", "second-opinion"]
       }
     },'
     agg_strong_block='
@@ -99,13 +104,17 @@ default_config() {
     local reviewer_core='
     "autoTrigger": false,
     "categories": ["spec-compliance", "tests", "security", "quality"],
-    "createTicketsFor": ["error"],
+    "requireSeverity": ["error"],
+    "requireConfidence": 80,
+    "hybridFiltering": true,
     "skipTags": ["no-review", "wip"]'
   else
     local reviewer_core='
     "autoTrigger": false,
     "categories": ["spec-compliance", "tests", "security", "quality"],
-    "createTicketsFor": ["error"],
+    "requireSeverity": ["error"],
+    "requireConfidence": 80,
+    "hybridFiltering": true,
     "skipTags": ["no-review", "wip"],'
   fi
 
@@ -199,6 +208,7 @@ resolve_template_ref() {
 # OpenCode files (canonical source)
 OPENCODE_FILES=(
   "agent/os-tk-planner.md"
+  "agent/os-tk-orchestrator.md"
   "agent/os-tk-worker.md"
   "agent/os-tk-reviewer.md"
   "agent/os-tk-reviewer-agg-fast.md"
@@ -222,6 +232,7 @@ OPENCODE_FILES=(
   "command/tk-run.md"
   "command/tk-start.md"
   "skill/openspec/SKILL.md"
+  "skill/tk-frontmatter/SKILL.md"
   "skill/ticket/SKILL.md"
   "skill/os-tk-workflow/SKILL.md"
 )
@@ -229,6 +240,7 @@ OPENCODE_FILES=(
 # Claude Code files
 CLAUDE_FILES=(
   "agents/os-tk-planner.md"
+  "agents/os-tk-orchestrator.md"
   "agents/os-tk-worker.md"
   "agents/os-tk-reviewer.md"
   "agents/os-tk-agent-spec.md"
@@ -248,6 +260,7 @@ CLAUDE_FILES=(
   "commands/tk-run.md"
   "commands/tk-start.md"
   "skills/openspec/SKILL.md"
+  "skills/tk-frontmatter/SKILL.md"
   "skills/ticket/SKILL.md"
   "skills/os-tk-workflow/SKILL.md"
 )
@@ -255,6 +268,7 @@ CLAUDE_FILES=(
 # Factory/Droid files
 FACTORY_FILES=(
   "droids/os-tk-planner.md"
+  "droids/os-tk-orchestrator.md"
   "droids/os-tk-worker.md"
   "droids/os-tk-reviewer.md"
   "droids/os-tk-agent-spec.md"
@@ -274,6 +288,7 @@ FACTORY_FILES=(
   "commands/tk-run.md"
   "commands/tk-start.md"
   "skills/openspec/SKILL.md"
+  "skills/tk-frontmatter/SKILL.md"
   "skills/ticket/SKILL.md"
   "skills/os-tk-workflow/SKILL.md"
 )
@@ -281,6 +296,7 @@ FACTORY_FILES=(
 # Pi files
 PI_FILES=(
   "agents/os-tk-planner.md"
+  "agents/os-tk-orchestrator.md"
   "agents/os-tk-worker.md"
   "agents/os-tk-reviewer.md"
   "agents/os-tk-reviewer-agg-fast.md"
@@ -302,6 +318,7 @@ PI_FILES=(
   "prompts/tk-run.md"
   "prompts/tk-start.md"
   "skills/openspec/SKILL.md"
+  "skills/tk-frontmatter/SKILL.md"
   "skills/ticket/SKILL.md"
   "skills/os-tk-workflow/SKILL.md"
 )
@@ -1115,7 +1132,7 @@ This prevents \`error\` findings with low confidence (likely false positives) fr
 ## Review Summary (YYYY-MM-DD)
 Consolidated review from \${scout_count} models.
 
-### Findings (passed hybrid filter: severity=\`error\`, confidence>=80)
+### Findings (passed hybrid filter: severity in \`requireSeverity\`, confidence>=\`requireConfidence\`)
 | Category | Severity | Confidence | Finding | Sources |
 |----------|----------|------------|---------|---------|
 | security | error | 85 | Missing auth check | spec-audit, shallow-bugs |
@@ -1124,7 +1141,7 @@ Consolidated review from \${scout_count} models.
 ### Skipped (failed threshold)
 | Category | Severity | Confidence | Reason |
 |----------|----------|------------|--------|
-| quality | warning | 65 | Severity not in createTicketsFor |
+| quality | warning | 65 | Severity not in requireSeverity |
 | spec-compliance | error | 70 | Confidence below threshold (80) |
 
 Created: T-XXX, T-YYY (linked)
@@ -1731,3 +1748,4 @@ main() {
 }
 
 main "$@"
+VERSION="0.6.0"

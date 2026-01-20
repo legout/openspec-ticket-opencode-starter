@@ -1,6 +1,6 @@
 ---
 description: Design and create tk epic + 3–8 chunky task tickets for an OpenSpec change [ulw]
-agent: os-tk-bootstrapper
+agent: os-tk-orchestrator
 permission:
   skill: allow
   bash: allow
@@ -43,6 +43,7 @@ Parse:
 - `openspec list`, `openspec show <id>`, `openspec validate <id>`
 - `tk create`, `tk dep`, `tk query`, `tk show` (only in `--yes` mode for create/dep)
 - Summarize and recommend next steps
+- Edit ticket frontmatter to add `files-modify` / `files-create`
 - Update `AGENTS.md` **only within `<!-- OS-TK-START -->` / `<!-- OS-TK-END -->` markers**
 
 ### FORBIDDEN
@@ -91,7 +92,17 @@ Design the dependencies:
 
 ---
 
-## Step 4: Generate Commands
+## Step 4: Predict file changes
+
+For each ticket, predict:
+- `files-modify`: Existing files likely to be changed
+- `files-create`: New files likely to be created
+
+Use conservative predictions. If uncertain, include broader paths to reduce conflict risk.
+
+---
+
+## Step 5: Generate Commands
 
 Create the exact commands that will be run:
 
@@ -103,7 +114,13 @@ tk create --type epic --external-ref "openspec:<change-id>" --title "<epic-title
 **Task creation (for each task):**
 ```bash
 tk create --type task --parent <epic-id> --title "<task title>" --acceptance "<measurable done criteria>"
+# Include frontmatter fields:
+# files-modify: [path1, path2]
+# files-create: [path3]
 ```
+
+If `tk create` cannot set frontmatter, edit the created ticket file in `.tickets/<id>.md` to add `files-modify` / `files-create`.
+Use the **tk-frontmatter** skill when editing ticket frontmatter.
 
 **Dependencies (if any):**
 ```bash
@@ -112,7 +129,7 @@ tk dep <blocked-id> <blocker-id>
 
 ---
 
-## Step 5: Preview or Execute
+## Step 6: Preview or Execute
 
 ### If Preview Mode (no `--yes`):
 

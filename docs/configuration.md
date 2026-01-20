@@ -32,13 +32,18 @@ The os-tk workflow is configured via `config.json`. This document explains each 
   "reviewer": {
     "autoTrigger": false,
     "categories": ["spec-compliance", "tests", "security", "quality"],
-    "createTicketsFor": ["error"],
+    "requireSeverity": ["error"],
+    "requireConfidence": 80,
+    "hybridFiltering": true,
     "skipTags": ["no-review", "wip"],
     "scouts": [
-      { "id": "opus45", "model": "google/antigravity-claude-opus-4-5-thinking", "reasoningEffort": "max" },
-      { "id": "gpt52",  "model": "openai/gpt-5.2-codex", "reasoningEffort": "high" },
-      { "id": "mini",   "model": "openai/gpt-5.1-codex-mini", "reasoningEffort": "high" },
-      { "id": "grok",   "model": "opencode/grok-fast" }
+      { "role": "spec-audit", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high" },
+      { "role": "shallow-bugs", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high" },
+      { "role": "history-context", "model": "google/antigravity-claude-opus-4-5-thinking", "reasoningEffort": "max" },
+      { "role": "code-comments", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high" },
+      { "role": "intentional-check", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high" },
+      { "role": "fast-sanity", "model": "opencode/grok-fast", "reasoningEffort": "none" },
+      { "role": "second-opinion", "model": "minimax/MiniMax-M2.1", "reasoningEffort": "none" }
     ],
     "adaptive": {
       "enabled": true,
@@ -48,9 +53,9 @@ The os-tk workflow is configured via `config.json`. This document explains each 
         "medium": { "maxFiles": 12, "maxChangedLines": 800 }
       },
       "defaults": {
-        "small":  ["grok", "mini"],
-        "medium": ["grok", "gpt52"],
-        "large":  ["grok", "gpt52", "opus45"]
+        "small":  ["shallow-bugs", "spec-audit"],
+        "medium": ["shallow-bugs", "spec-audit", "history-context"],
+        "large":  ["shallow-bugs", "spec-audit", "history-context", "code-comments", "intentional-check", "fast-sanity", "second-opinion"]
       }
     },
     "aggregatorStrong": {
@@ -131,8 +136,8 @@ This regenerates the agent files (`.opencode/agent/*.md`) with the updated model
   "reviewer": {
     "autoTrigger": true,
     "scouts": [
-      { "id": "opus", "model": "google/antigravity-claude-opus-4-5-thinking", "reasoningEffort": "high" },
-      { "id": "gpt52", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high" }
+      { "role": "history-context", "model": "google/antigravity-claude-opus-4-5-thinking", "reasoningEffort": "high" },
+      { "role": "spec-audit", "model": "openai/gpt-5.2-codex", "reasoningEffort": "high" }
     ],
     "aggregatorStrong": { "model": "openai/gpt-5.2", "reasoningEffort": "medium" }
   }
@@ -148,8 +153,8 @@ This regenerates the agent files (`.opencode/agent/*.md`) with the updated model
     "autoTrigger": true,
     "adaptive": { "enabled": true },
     "scouts": [
-      { "id": "grok", "model": "opencode/grok-fast" },
-      { "id": "mini", "model": "openai/gpt-5.1-codex-mini" }
+      { "role": "fast-sanity", "model": "opencode/grok-fast" },
+      { "role": "spec-audit", "model": "openai/gpt-5.1-codex-mini" }
     ]
   }
 }
@@ -163,7 +168,7 @@ This regenerates the agent files (`.opencode/agent/*.md`) with the updated model
   "reviewer": {
     "autoTrigger": true,
     "categories": ["spec-compliance", "tests", "security"],
-    "createTicketsFor": ["error"]
+    "requireSeverity": ["error"]
   }
 }
 ```

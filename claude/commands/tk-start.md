@@ -13,7 +13,7 @@ Parse arguments:
 ## Current Context
 
 Config settings:
-!`cat .os-tk/config.json | jq '{useWorktrees, defaultParallel}'`
+!`(cat .os-tk/config.json 2>/dev/null || cat config.json) | jq '{useWorktrees, defaultParallel}'`
 
 Ready tickets:
 !`tk ready`

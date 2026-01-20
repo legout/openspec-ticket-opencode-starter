@@ -114,8 +114,8 @@ User Intent → Planning → Execution → Archive
 | `/os-change` | planner | View OpenSpec changes (read-only) |
 | `/os-proposal` | worker | Create proposal files |
 | `/os-breakdown` | planner | Analyze PRD, create multiple proposals |
-| `/tk-bootstrap` | planner | Design + create tickets |
-| `/tk-queue` | planner | View ready/blocked (read-only) |
+| `/tk-bootstrap` | orchestrator | Design + create tickets |
+| `/tk-queue` | orchestrator | Queue management + file-aware deps |
 | `/tk-start` | worker | Implement ticket |
 | `/tk-done` | worker | Close, sync, merge, push |
 | `/tk-review` | reviewer | Post-implementation review |
@@ -176,21 +176,29 @@ User Intent → Planning → Execution → Archive
 
 ### Ralph Decision Flow
 
+**NOTE:** Sequence changed from start→done→review to **start→review→done** (gate-first workflow).
+
 ```
 1. /tk-queue --next
    ├─ Empty → Exit "No more work"
    │
    └─ Has ticket → /tk-start <id>
-                   ├─ Success → /tk-done <id>
-                   │            ├─ Success → /tk-review <id>
-                   │            │            ├─ Passed → Loop to step 1
-                   │            │            └─ Failed → Create fix ticket
-                   │            │                        ├─ P0 → Exit
-                   │            │                        └─ P1/P2 → Loop
-                   │            └─ Failure → Ask human
+                   ├─ Success → /tk-review <id>
+                   │            ├─ PASS → /tk-done <id>
+                   │            │         ├─ Success → Loop to step 1
+                   │            │         └─ Failure → Ask human
+                   │            ├─ FAIL → Stop (gate policy)
+                   │            │         └─ Instruct to fix and re-run /tk-review
+                   │            └─ Error → Ask human
                    │
                    └─ Failure → Ask human
 ```
+
+**Gate policy behavior:**
+- In `gate` or `gate-with-followups` modes: review FAIL stops the loop
+- Ticket remains open; user must fix issues and re-run `/tk-review`
+- After re-review passes, continue with `/tk-done`
+- `followups-only` mode does not stop on FAIL (review failures non-blocking)
 
 ## Parallel Execution
 
@@ -223,6 +231,204 @@ files-create: [src/types/User.ts]
 ```
 
 `/tk-queue --all` auto-creates dependencies to prevent overlapping file modifications.
+
+## /tk-review Workflow
+
+Use this to execute reviews using the 4-role + lead pipeline.
+
+**Precondition:** Ticket must be **open**. Review happens **before** closing, not after merge.
+
+### 1. Validate ticket is open
+
+```
+# Check ticket status
+STATUS=$(tk show <ticket-id> | grep -E "^status:" | awk '{print $2}')
+
+if [[ "$STATUS" != "open" ]]; then
+  Error: Ticket is closed (status: $STATUS)
+  Review requires open ticket. Reopen with: tk reopen <ticket-id>
+fi
+```
+
+### 2. Resolve base ref (deterministic)
+
+```
+# Prefer origin if available, else use local main
+if git remote | grep -q "origin"; then
+  BASE_REF="origin/${MAIN_BRANCH:-main}"
+else
+  BASE_REF="${MAIN_BRANCH:-main}"
+fi
+
+# Get merge-base commit
+MERGE_BASE_SHA=$(git merge-base ${BASE_REF} HEAD)
+BASE_SHA=$(git rev-parse ${BASE_REF})
+HEAD_SHA=$(git rev-parse HEAD)
+
+# Compute diff stat and hash
+DIFF_STAT=$(git diff --stat ${MERGE_BASE_SHA}...HEAD)
+DIFF_HASH=$(git diff ${MERGE_BASE_SHA}...HEAD | sha256sum | awk '{print $1}')
+```
+
+### 3. Check for skip tags
+
+```
+# Get ticket tags
+TICKET_TAGS=$(tk show <ticket-id> | grep -E "^tags:" | sed 's/tags: //')
+
+# Get skipTags from config
+SKIP_TAGS=$(jq -r '.reviewer.skipTags[]' config.json 2>/dev/null || echo "no-review,wip")
+
+# Check if ticket has any skip tag
+for skip_tag in $SKIP_TAGS; do
+  if echo "$TICKET_TAGS" | grep -q "$skip_tag"; then
+    Write SKIPPED note with metadata (base/head/merge-base/diffHash)
+    Exit early (no role reviewers run)
+  fi
+done
+```
+
+### 4. Orchestrate role reviewers
+
+Spawn enabled role reviewers in parallel (via subagent calls):
+
+**Role reviewers:**
+- `bug-footgun` - diff-focused bug/security scan
+- `spec-audit` - OpenSpec/spec compliance
+- `generalist` - regression, intentionality, code quality
+- `second-opinion` - alternative perspective, edge cases
+
+Use `--roles` flag if provided, otherwise use all enabled roles from config.
+
+Each role outputs a structured envelope:
+```json
+{
+  "role": "role-name",
+  "findings": [...]
+}
+```
+
+### 5. Lead reviewer merges findings
+
+**Dedupe key:** `(category, normalized_title, primary_file)`
+
+**Resolution:**
+```javascript
+severity = MAX(findings.map(f => f.severity))  // error > warning > info
+confidence = MIN(findings.map(f => f.confidence))  // conservative
+sources = findings.map(f => f.role)  // which roles found it
+agreement = sources.length  // e.g., "2/4 roles flagged this"
+```
+
+**Evidence guardrail:**
+- If `severity === "error"` but `evidence` is missing/weak:
+  - Downgrade to `"warning"`
+  - Note in description: "Downgraded from error due to weak evidence"
+
+### 6. Decide PASS/FAIL (config-driven)
+
+Load config (`reviewer.policy`, `blockSeverities`, `blockMinConfidence`):
+
+```javascript
+hasBlocker = findings.some(f =>
+  config.blockSeverities.includes(f.severity) &&
+  f.confidence >= config.blockMinConfidence
+)
+
+pass = !hasBlocker
+```
+
+### 7. Create followups (policy-dependent)
+
+```javascript
+shouldCreateFollowup = severity in followupSeverities && confidence >= followupMinConfidence
+```
+
+**Policy semantics:**
+- **gate**: Never create followups (even for warnings)
+- **gate-with-followups**: Create followups only when PASS (no blockers)
+- **followups-only**: Always create followups (warnings + errors)
+
+**Idempotency:** Use stable key deduplication to avoid duplicate followups.
+
+### 8. Write consolidated note
+
+```markdown
+## Review Summary (YYYY-MM-DD)
+**Result:** PASS | FAIL
+**Policy:** gate | gate-with-followups | followups-only
+**Base:** ${baseRef} (${baseSha})
+**Head:** ${headSha}
+**Merge Base:** ${mergeBaseSha}
+**Diff:** ${diffStat}
+**Hash:** ${diffHash}
+
+### Blocking Findings (must fix)
+| Category | Severity | Confidence | Finding | Evidence | Sources |
+|----------|----------|------------|---------|----------|---------|
+| security | error | 90 | Missing auth check | src/api.ts:23 | spec-audit, bug-footgun |
+
+### Non-Blocking Findings
+| Category | Severity | Confidence | Finding | Evidence |
+|----------|----------|------------|---------|----------|
+| quality | warning | 70 | TODO not addressed | src/user.ts:45 |
+
+### Follow-ups Created
+- T-XXX: Fix missing auth check (linked)
+- T-YYY: Address TODO in user service (linked)
+```
+
+**SKIPPED format (if skip tag present):**
+```markdown
+## Review Summary (YYYY-MM-DD)
+**Result:** SKIPPED
+**Reason:** Ticket has tag "no-review"
+**Policy:** ${policy}
+**Head:** ${headSha}
+```
+
+### Flags
+
+- `--roles <comma-list>`: Override which roles run
+- `--policy <gate|gate-with-followups|followups-only>`: Override policy
+- `--base <ref>`: Override base ref (advanced)
+
+**Deprecation:**
+- Old flags (`--ultimate`, `--fast`, `--shallow-bugs`, etc.) mapped to `--roles` with warnings
+- `--working-tree` removed (now default behavior)
+
+Lead reviewer is the only writer (`tk add-note`, `tk create`, `tk link`).
+
+## /tk-run Workflow
+
+Use this for autonomous execution loops.
+
+**NOTE:** Sequence changed from start→done→review to **start→review→done** (gate-first workflow).
+
+1. **Mode**:
+   - Single ticket: run once.
+   - `--epic`: loop until all tickets under epic closed.
+   - `--ralph`: loop until `tk ready` is empty.
+
+2. **Cycle (start → review → done)**:
+   - Select next ready ticket.
+   - `/tk-start <id>` → `/tk-review <id>` → `/tk-done <id>`
+   - If `/tk-review` returns FAIL and policy is `gate` or `gate-with-followups`:
+     - Stop the loop (ticket remains open)
+     - Instruct user to fix issues and re-run `/tk-review`
+   - If `/tk-review` returns PASS:
+     - Proceed to `/tk-done` (which validates review is fresh)
+
+3. **Exit**:
+   - Stop at `--max-cycles`.
+   - Stop when queue/epic has no more ready tickets.
+   - Stop on P0 fix ticket creation (critical issue requires human review).
+   - Stop when `/tk-review` FAILs (in `gate` or `gate-with-followups` modes).
+
+**Policy impact on /tk-run:**
+- `gate` (default): Review FAIL stops loop; user must fix and re-run manually
+- `gate-with-followups`: Review FAIL stops loop; warnings only create followups on PASS
+- `followups-only`: Review FAIL does NOT stop loop; all failures create followups
 
 ## Troubleshooting
 

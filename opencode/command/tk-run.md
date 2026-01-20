@@ -1,229 +1,301 @@
 ---
-description: Run full ticket lifecycle (start → done → review) with fresh context per step
+description: Run autonomous ticket lifecycle (start → review → done) [ulw]
 agent: os-tk-planner
 ---
 
 # /tk-run [<ticket-id>] [--epic <epic-id>] [--ralph] [--max-cycles N]
 
-**Arguments:** $ARGUMENTS
-
-Parse arguments:
-- `ticket-id`: Single ticket to process (default mode)
-- `--epic <epic-id>`: Process all tickets in the epic until complete
-- `--ralph`: Process all ready tickets until queue empty (autonomous mode)
-- `--max-cycles N`: Safety limit (default: 50 for ralph, 20 for epic, 1 for single)
-
-## Mode Selection
-
-| Mode | Behavior |
-|------|----------|
-| Default (single ticket) | Run one ticket through start → done → review |
-| `--epic` | Loop until all tickets in epic are closed |
-| `--ralph` | Loop until `tk ready` returns empty |
+Use your **os-tk-workflow** skill section "/tk-run Workflow" for the updated sequence.
 
 ---
 
-## Step 1: Load config and determine mode
+## Arguments
 
-Read `.os-tk/config.json` for:
-- `reviewer.autoTrigger` (boolean: false = manual, true = auto after done)
-
-Determine mode:
-- If `--ralph`: ralph mode, max_cycles defaults to 50
-- If `--epic <id>`: epic mode, max_cycles defaults to 20
-- If `ticket-id`: single mode, max_cycles = 1
-- If nothing: show usage and EXIT
-
-## Step 2: Validate inputs
-
-**Single ticket mode:**
-```bash
-tk show <ticket-id>
-```
-Verify ticket exists and is ready.
-
-**Epic mode:**
-```bash
-tk show <epic-id>
-```
-Verify epic exists. Get list of child tickets.
-
-**Ralph mode:**
-```bash
-tk ready
-```
-Verify queue is not empty.
-
----
-
-## Step 3: Main execution loop
-
-```
-cycles = 0
-
-WHILE cycles < max_cycles:
-    
-    # 3a. Select next ticket
-    IF single mode:
-        ticket = provided ticket-id
-    ELIF epic mode:
-        tickets = tk query '.parent == "<epic-id>" and .status != "closed"'
-        ready_tickets = filter by tk ready
-        IF ready_tickets is empty:
-            PRINT "Epic complete. All tickets closed."
-            EXIT
-        ticket = first ready ticket
-    ELIF ralph mode:
-        ready = tk ready
-        IF ready is empty:
-            PRINT "Queue empty. Exiting."
-            EXIT
-        ticket = first ready ticket
-    
-    # 3b. Execute with FRESH CONTEXT per step
-    # Each step runs as a subagent with its own context
-    
-    PRINT "=== Cycle $cycles: Processing $ticket ==="
-    
-    # STEP 1: Start (fresh subagent)
-    SPAWN SUBAGENT:
-        Read: AGENTS.md, openspec/project.md
-        Read: tk show <ticket-id> (get epic, external_ref)
-        Read: OpenSpec change files (proposal.md, tasks.md, specs/)
-        Execute: /tk-start <ticket-id>
-    
-    # STEP 2: Done (fresh subagent)  
-    SPAWN SUBAGENT:
-        Read: AGENTS.md, openspec/project.md
-        Read: tk show <ticket-id>
-        Execute: /tk-done <ticket-id>
-    
-    # STEP 3: Review (fresh subagent, if enabled)
-    IF reviewer.autoTrigger:
-        SPAWN SUBAGENT:
-            Read: AGENTS.md, openspec/project.md
-            Read: tk show <ticket-id>
-            Read: OpenSpec specs
-            Execute: /tk-review <ticket-id>
-            
-            # Check for critical issues
-            IF P0 fix ticket created:
-                PRINT "Critical issue found. Stopping for human review."
-                EXIT
-    
-    cycles++
-    
-    # Exit conditions
-    IF single mode:
-        PRINT "Ticket $ticket complete."
-        EXIT
-```
-
----
-
-## Fresh Context Pattern
-
-**Why fresh context matters:**
-- Prevents hallucinations from stale information
-- Each step reads current state from disk/git
-- Long conversations don't pollute decision-making
-- Matches how human developers work (check status before acting)
-
-**What each subagent reads:**
-1. `AGENTS.md` — Workflow rules
-2. `openspec/project.md` — Project conventions
-3. `tk show <ticket-id>` — Current ticket state
-4. Epic's `external_ref` → OpenSpec change files
-5. Relevant code files (determined by ticket)
-
-**OpenCode implementation:**
-```yaml
-# Each step uses subtask: true to get fresh context
-agent: os-tk-worker
-subtask: true
-```
-
----
-
-## Output Summary
-
-After each cycle:
-```
-=== Cycle 0: Processing T-123 ===
-  ✓ /tk-start T-123 (implemented)
-  ✓ /tk-done T-123 (committed, merged, pushed)
-  ✓ /tk-review T-123 (passed, no issues)
-
-=== Cycle 1: Processing T-456 ===
-  ...
-```
-
-Final summary:
-```
-/tk-run complete:
-  Mode: epic (otos-653a)
-  Cycles: 5
-  Tickets processed: T-123, T-456, T-789, T-012, T-345
-  Exit reason: Epic complete
-```
+- `ticket-id`: Single ticket to process (optional, if omitted uses queue)
+- `--epic <epic-id>`: Process all tickets under epic until closed
+- `--ralph`: Loop until queue is empty (full Ralph mode)
+- `--max-cycles N`: Limit number of iterations (default: 10)
 
 ---
 
 ## EXECUTION CONTRACT
 
-This command is an **orchestrator** that:
-- Reads queue/ticket state
-- Spawns subagents for actual work
-- Tracks cycle count
-- Handles exit conditions
+### ALLOWED
+- `tk ready`, `tk blocked`, `tk show` - Queue and ticket inspection
+- `tk query` - Query ticket state
+- Delegated commands: `/tk-start`, `/tk-review`, `/tk-done`
 
-**This command DOES NOT directly:**
-- Edit code files
-- Close tickets
-- Merge branches
+### FORBIDDEN
+- Direct code edits (delegate to `/tk-start`)
+- Direct ticket closing (delegate to `/tk-done`)
+- Skipping review gate in gate policies
 
-**Delegates to (as fresh subagents):**
-- `/tk-start` — Implementation (os-tk-worker)
-- `/tk-done` — Commit, sync, merge, push (os-tk-worker)
-- `/tk-review` — Code review (os-tk-reviewer)
+---
+
+## Step 1: Determine Mode
+
+**Single ticket mode:**
+```
+If ticket-id is provided:
+  Process just that ticket: start → review → done
+  Exit after completion
+```
+
+**Epic mode:**
+```
+If --epic is provided:
+  Loop until all tickets under epic are closed
+  Each cycle: select ready ticket under epic → start → review → done
+  Exit when: epic has no more open tickets
+```
+
+**Ralph mode:**
+```
+If --ralph is provided:
+  Loop until queue is empty (tk ready returns nothing)
+  Each cycle: select next ready ticket → start → review → done
+  Exit when: tk ready is empty or max-cycles reached
+```
+
+---
+
+## Step 2: Cycle Logic (NEW: start → review → done)
+
+**IMPORTANT:** The order has changed from start→done→review to **start→review→done**.
+
+### 2.1 Select next ticket
+
+```bash
+# Get next ready ticket
+if [[ -n "$EPIC_ID" ]]; then
+  # Epic mode: get ready tickets under epic
+  NEXT_TICKET=$(tk query '.parent == "'$EPIC_ID'" and .status == "open"' | jq -r '.[0].id')
+else
+  # Ralph mode or queue mode: get next ready ticket
+  NEXT_TICKET=$(tk ready | head -1 | awk '{print $1}')
+fi
+
+if [[ -z "$NEXT_TICKET" ]]; then
+  echo "No more tickets to process"
+  exit 0
+fi
+```
+
+### 2.2 Start ticket
+
+```bash
+echo "Starting: $NEXT_TICKET"
+/tk-start $NEXT_TICKET
+
+START_RESULT=$?
+
+if [[ $START_RESULT -ne 0 ]]; then
+  echo "Failed to start ticket: $NEXT_TICKET"
+  echo "Stopping for human intervention"
+  exit 1
+fi
+```
+
+### 2.3 Review ticket (NEW GATE)
+
+```bash
+echo "Reviewing: $NEXT_TICKET"
+/tk-review $NEXT_TICKET
+
+REVIEW_RESULT=$?
+
+if [[ $REVIEW_RESULT -ne 0 ]]; then
+  echo "Review failed for ticket: $NEXT_TICKET"
+  echo "Review gate: BLOCKED (ticket remains open)"
+
+  # Load config to check policy
+  POLICY=$(jq -r '.reviewer.policy // "gate"' config.json)
+
+  if [[ "$POLICY" == "gate" ]] || [[ "$POLICY" == "gate-with-followups" ]]; then
+    echo "Policy: $POLICY (blocks on review FAIL)"
+    echo "Stopping for human intervention"
+    echo ""
+    echo "To fix issues:"
+    echo "  1. Review findings in ticket notes"
+    echo "  2. Fix blocking issues"
+    echo "  3. Re-run: /tk-review $NEXT_TICKET"
+    echo "  4. Retry: /tk-done $NEXT_TICKET"
+    exit 1
+  else
+    # followups-only policy: always PASS
+    echo "Policy: followups-only (review failures non-blocking)"
+    echo "Proceeding to /tk-done (followup tickets may have been created)"
+  fi
+fi
+
+# Extract review result for reporting
+LATEST_REVIEW=$(tk show $NEXT_TICKET | grep -A 30 "## Review Summary")
+REVIEW_RESULT_TEXT=$(echo "$LATEST_REVIEW" | grep "Result:" | awk '{print $2}')
+
+echo "Review result: $REVIEW_RESULT_TEXT"
+```
+
+### 2.4 Close ticket
+
+```bash
+echo "Closing: $NEXT_TICKET"
+/tk-done $NEXT_TICKET
+
+DONE_RESULT=$?
+
+if [[ $DONE_RESULT -ne 0 ]]; then
+  echo "Failed to close ticket: $NEXT_TICKET"
+  echo "Stopping for human intervention"
+  exit 1
+fi
+```
+
+---
+
+## Step 3: Exit Conditions
+
+### Max cycles limit
+
+```bash
+CYCLE=$((CYCLE + 1))
+
+if [[ $CYCLE -ge $MAX_CYCLES ]]; then
+  echo "Max cycles reached ($MAX_CYCLES)"
+  echo "Stopping"
+  exit 0
+fi
+```
+
+### Critical (P0) fix ticket created
+
+```bash
+# Check if P0 fix ticket was created during review
+P0_FIXES=$(tk query '.priority == 0 and .status == "open"' | jq -r '.[].id')
+
+if [[ -n "$P0_FIXES" ]]; then
+  echo "Critical (P0) fix ticket(s) created: $P0_FIXES"
+  echo "Stopping for human review"
+  exit 1
+fi
+```
+
+### Empty queue (Ralph/epic mode)
+
+```bash
+if [[ -n "$EPIC_ID" ]]; then
+  # Epic mode: check if more tickets open under epic
+  REMAINING=$(tk query '.parent == "'$EPIC_ID'" and .status != "closed"' | jq 'length')
+  if [[ $REMAINING -eq 0 ]]; then
+    echo "All tickets under epic $EPIC_ID are closed"
+    exit 0
+  fi
+else
+  # Ralph mode: check if queue is empty
+  if ! tk ready | grep -q .; then
+    echo "Queue is empty"
+    exit 0
+  fi
+fi
+```
+
+---
+
+## Step 4: Loop (Repeat from Step 2)
+
+```
+# Decrement max-cycles counter
+# Go back to Step 2
+```
 
 ---
 
 ## Examples
 
-```bash
-# Process one ticket (default)
-/tk-run T-123
+### Single ticket:
+```
+/tk-run otos-0159
+Starting: otos-0159
+Reviewing: otos-0159
+  Review result: PASS
+Closing: otos-0159
+✓ Complete
+```
 
-# Process entire epic
-/tk-run --epic otos-653a
+### Epic mode:
+```
+/tk-run --epic otos-70e5 --max-cycles 5
+Cycle 1/5
+  Starting: otos-0159
+  Reviewing: otos-0159 (PASS)
+  Closing: otos-0159 ✓
+Cycle 2/5
+  Starting: otos-833b
+  Reviewing: otos-833b (PASS)
+  Closing: otos-833b ✓
+...
+```
 
-# Ralph mode (internal): uses subtasks, shared process
-/tk-run --ralph
-
-# Ralph mode with lower cycle limit
+### Ralph mode:
+```
 /tk-run --ralph --max-cycles 10
+Starting: otos-0159
+  Review result: PASS
+  Closing: otos-0159 ✓
+Starting: otos-054e
+  Review result: PASS
+  Closing: otos-054e ✓
+Queue is empty
+✓ All done
+```
+
+### Review fails (gate policy):
+```
+/tk-run --ralph
+Starting: otos-0159
+  Review result: FAIL
+  Review gate: BLOCKED (ticket remains open)
+  Policy: gate (blocks on review FAIL)
+  Stopping for human intervention
+
+To fix issues:
+  1. Review findings in ticket notes
+  2. Fix blocking issues
+  3. Re-run: /tk-review otos-0159
+  4. Retry: /tk-done otos-0159
+```
+
+### P0 fix ticket created:
+```
+/tk-run --ralph
+Starting: otos-0159
+  Review result: PASS (with followups)
+  Critical (P0) fix ticket(s) created: otos-a1b2
+  Stopping for human review
 ```
 
 ---
 
-## Internal vs External Ralph Mode
+## Config Options
 
-| Mode | Command | Context Isolation | Use Case |
-|------|---------|-------------------|----------|
-| Internal | `/tk-run --ralph` | Subtasks (partial) | Small features, bug fixes |
-| External | `./ralph.sh` | Full process isolation | Large greenfield projects |
+```json
+{
+  "reviewer": {
+    "policy": "gate",
+    "autoTrigger": false
+  }
+}
+```
 
-**Internal (`/tk-run --ralph`):**
-- Uses OpenCode subtasks for each step
-- Faster (no process spawn overhead)
-- Context mostly fresh but shares parent process
-- Good for: quick iterations, small changes
+- `reviewer.policy`: Controls gate behavior
+  - `gate`: Stops on review FAIL (default)
+  - `gate-with-followups`: Stops on review FAIL
+  - `followups-only`: Does not stop on FAIL
 
-**External (`./ralph.sh`):**
-- Spawns fresh `opencode` process per ticket
-- Complete context isolation guaranteed
-- Slower but more reliable for long runs
-- Good for: greenfield, multi-hour autonomous runs
+---
 
-See `ralph.sh` in project root for external implementation.
+## Notes
+
+- **Sequence changed:** Now uses start→review→done (review BEFORE close)
+- **Gate enforcement:** `/tk-done` validates PASS review for current HEAD/diffHash
+- **Auto-rerun:** Optional safety feature in `/tk-done` with guardrails
+- **P0 stops:** Critical fix tickets always stop the loop for human review

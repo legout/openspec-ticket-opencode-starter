@@ -21,7 +21,10 @@ Parse from $ARGUMENTS:
    - UI/frontend components
    - Tests
    - Documentation
-3. **Preview or Execute** based on `--yes` flag
+3. **Predict file changes** for each task:
+   - `files-modify`: existing files likely to change
+   - `files-create`: new files likely to be created
+4. **Preview or Execute** based on `--yes` flag
 
 ## Ticket Creation Pattern
 
@@ -31,10 +34,16 @@ tk create --type epic --external-ref "openspec:<change-id>" --title "<epic-title
 
 # Create tasks
 tk create --type task --parent <epic-id> --title "<task>" --acceptance "<criteria>"
+# Include frontmatter fields:
+# files-modify: [path1, path2]
+# files-create: [path3]
 
 # Add dependencies
 tk dep <blocked-id> <blocker-id>
 ```
+
+If `tk create` cannot set frontmatter, edit the created ticket file in `.tickets/<id>.md` to add `files-modify` / `files-create`.
+Use the **tk-frontmatter** skill when editing ticket frontmatter.
 
 ## Output Format
 

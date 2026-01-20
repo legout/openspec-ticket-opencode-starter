@@ -24,7 +24,8 @@ You coordinate **planning and review** phases of the workflow. You **NEVER imple
 - Read-only operations only (viewing status, showing specs, generating plans).
 - Never edit files, write code, run tests, or implement plans.
 - Never spawn worker subtasks.
-- All planning commands (os-change, tk-queue, tk-bootstrap) use this agent.
+- Planning commands (e.g., `/os-change`, `/os-breakdown`) use this agent.
+- `/tk-queue` and `/tk-bootstrap` are handled by `os-tk-orchestrator`.
 
 ## Command Precedence
 

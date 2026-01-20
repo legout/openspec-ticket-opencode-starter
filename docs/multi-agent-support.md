@@ -50,6 +50,7 @@ os-tk init --agent all
 .opencode/
   agent/
     os-tk-planner.md
+    os-tk-orchestrator.md
     os-tk-worker.md
     os-tk-reviewer.md
     os-tk-agent-spec.md
@@ -71,6 +72,7 @@ os-tk init --agent all
 .claude/
   agents/
     os-tk-planner.md
+    os-tk-orchestrator.md
     os-tk-worker.md
     os-tk-reviewer.md
     os-tk-agent-spec.md
@@ -96,6 +98,7 @@ os-tk init --agent all
 .factory/
   droids/
     os-tk-planner.md
+    os-tk-orchestrator.md
     os-tk-worker.md
     os-tk-reviewer.md
     os-tk-agent-spec.md
@@ -121,6 +124,7 @@ os-tk init --agent all
 .pi/
   agents/
     os-tk-planner.md
+    os-tk-orchestrator.md
     os-tk-worker.md
     os-tk-reviewer.md
     os-tk-agent-spec.md
